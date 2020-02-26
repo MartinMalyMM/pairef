@@ -1,0 +1,125 @@
+/* 
+#0065BD
+#6AADE4
+#9B9B9B 
+*/
+
+body {
+    padding: 0
+}
+
+h1, h2, h3 {
+    font-family: Arial;
+}
+
+h2 {
+    border-bottom: 2px solid #0065BD;
+    width: 100%;
+}
+
+a:link, a:visited {
+    color: #0065BD
+}
+
+a:hover, a:active {
+    color: #6AADE4
+}
+
+pre {
+    border: 2px dashed #9B9B9B;
+    padding: 1ex;
+    background-color: #F2F2F2; /* grey */
+    
+}
+
+#header {
+    color: white;
+    background-color: #0065BD;
+    width: 99%;
+    margin: 2pt;
+    padding: 5pt
+}
+
+#title {
+    font-family: Arial;
+    font-weight: bold;
+    font-style: italic;
+    font-size: 20pt;
+}
+
+#subtitle {
+    font-style: italic;
+}
+
+.yellowbox {
+    padding: 1ex;
+    font-style: italic;
+    background-color: #FAF3AC;
+}
+
+.progress {
+    font-weight: bold;
+    color: #0065BD;
+}
+
+.reload {
+    font-style: normal;
+    font-weight: bold;
+    margin-left: 3em;
+}
+
+.orangebox {
+    padding: 1ex;
+    font-style: italic;
+    background-color: #FF9900;
+}
+
+.greenbox {
+    padding: 1ex;
+    font-style: italic;
+    background-color: #98e698;
+}
+
+.note {
+    font-style: italic;
+}
+
+.error {
+    padding: 1ex;
+    font-style: italic;
+    background-color: #ff8080;
+    width: 99%;
+
+}
+
+ul {
+    margin: 0px;
+}
+
+@media screen {
+    /* Two columns environment - inspired by http://jsfiddle.net/kizu/nMWcG/ */
+    .wrap {
+        white-space: nowrap;
+        padding-right: 10em; /* The size of a gap * number of columns */
+        margin-left: -5em; /* The size of a gap */
+        margin-bottom: 1.5em;
+    }
+    
+    .column {
+        display: inline-block;
+        vertical-align: top;
+        padding-left: 5em; /* The size of a gap */
+        /* Faux equal columns */
+        padding-right: 5em; /* The size of a gap */
+        margin-right: -5em; /* The size of a gap */
+    }
+    
+    /* Horizontaly scroll div  - inspired by http://jsfiddle.net/GCPDE/ */
+    .scroll {
+        width: 100%;
+        border: 0px solid #0065BD;
+        border-bottom-width: 1px;
+        overflow: auto;
+        white-space: nowrap;
+    }
+}

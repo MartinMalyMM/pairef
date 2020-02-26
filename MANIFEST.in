@@ -1,0 +1,5 @@
+include LICENSE
+include test/*
+include test/fixtures/*
+include docs/*
+include docs/_static/*
