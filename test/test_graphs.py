@@ -65,6 +65,8 @@ def test_write_log_html(tmp_environ):
     args.libin = "fake.mtz"
     args.comin = "fake.com"
     args.tlsin = "fake.tls"
+    args.defin = None
+    args.phenix = None
     args.project = "A"
     args.ncyc = 11
     args.weight = None

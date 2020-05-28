@@ -1,3 +1,4 @@
+# coding: utf-8
 from __future__ import print_function
 import sys
 import os
@@ -5,7 +6,7 @@ import subprocess
 import datetime
 from math import sqrt, pow
 from collections import OrderedDict  # Python 2.7
-from .settings import warning_dict, date_time
+from .settings import warning_dict, date_time, settings
 from .commons import twodec, twodecname, fourdec, extract_from_file
 from .commons import warning_my
 
@@ -60,7 +61,7 @@ def welcome(args):
 /   / / _(_ / \ (__ (
 """)
     print("automatic PAIRed REFinement protocol")
-    print("version: 1.0.0")
+    print("version: 1.2.0")
     print("run date and time: " + date_time)
     print("user@host: " + getpass.getuser() + "@" + socket.gethostname())
     print("")
@@ -71,6 +72,10 @@ def welcome(args):
     print("Command line arguments: " + " ".join(sys.argv[1:]))
     print("")
     print("Program has been executed with following input parameters:")
+    if args.refmac:
+        print(" * Refinement software: REFMAC5")
+    if args.phenix:
+        print(" * Refinement software: phenix.refine")
     print(" * XYZIN: " + args.xyzin)
     print(" * HKLIN: " + args.hklin)
     if args.hklin_unmerged:
@@ -123,13 +128,11 @@ def welcome(args):
         print(" * The same FFT grid will be kept through the whole paired "
               "refinement.")
     if args.comin:
-        print(" * Com file: " + args.comin)
+        print(" * Com file for REFMAC5: " + args.comin)
+    if args.defin:
+        print(" * Keyword file for phenix.refine: " + args.defin)
     if args.test:
         print(" * Light-testing mode (REFMAC5 will not be executed).")
-    # if args.refinement == True:
-        # print(" * Refinement software: Phenix.refine")
-    # elif args.refinement == False:
-        # print(" * Refinement software: REFMAC5 (default option)")
     print("")
     return True
 
@@ -177,17 +180,18 @@ class output_log:
         self.logfile.close()
 
 
-def def_res_shells(args, res_high_mtz, res_low=999):
+def def_res_shells(args, refinement, res_high_mtz, res_low=999):
     """Determine high resolution shells and number of low resolution bins.
 
     The first value of list should be the resolution of data which
     were used for the refinement of the input structure model.
     If explicit definition (args.res_shells) is set, test its correctness.
-    If it is valid, use, if not, define it automatically using `mtzdump`.
+    If it is valid, use, if not, define it automatically (shell step 0.05 A)
 
     Args:
         args (parser): Input arguments (including e. g. name of the project) \
                        parsed by `argparse` via function process_arguments()
+        refinement (str): "refmac" or "phenix"
         res_high_mtz (float): High resolution diffraction limit of args.hklin
         res_low (float): Low resolution diffraction limit of args.hklin
 
@@ -195,6 +199,7 @@ def def_res_shells(args, res_high_mtz, res_low=999):
         (tuple):
             * shells (*list*)
             * n_bins_low (*int*)
+            * n_flag_sets (*int*)
             * default_shells_definition (*bool*)
     """
     # If the resolution of input model == resolution of diffr. data, abort
@@ -205,44 +210,81 @@ def def_res_shells(args, res_high_mtz, res_low=999):
                          "" + args.hklin + " have. Nothing to do."
                          "\nAborting.\n")
         sys.exit(1)
-    # Estimation of number of low resolution bins (using `mtzdump` from CCP4)
-    # If not successful, just divide into 12 resolution bins.
-    p = subprocess.Popen(["mtzdump", "HKLIN", args.hklin],
-                         stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-    com = "STATS NBIN 1 RESO " + twodec(res_low) + " " \
-        "" + twodec(args.res_init) + "\n end\n"
-    output, err = p.communicate(com)
-    # rc = p.returncode
+    # Estimation of
+    #   1. a number of low resolution bins and
+    #   2. a number of free reflection sets
+    # If not successful, just divide into 12 resolution bins
+    # and consider 20 free reflection sets.
     n_i_obs = 0
     n_i_obs_low = 0
     n_flag_sets = 0
-    try:
-        for line in output.splitlines():
-            if " * Number of Reflections = " in line:
-                n_i_obs = int(line.split()[-1])
-            elif len(line.split()) == 12:
-                if "free" in line.split()[-1].lower():
-                    n_flag_sets = int(float(line.split()[3])) - \
-                        int(float(line.split()[2])) + 1
-            elif " No. of reflections used in FILE STATISTICS" in line:
-                n_i_obs_low = int(line.split()[-1])
-                break
-    except ValueError:
-        n_bins_low = 12
-        warning_my("mtzdump",
-                   "Definition of binning "
-                   "and search for number of sets of free reflection "
-                   "using mtzdump were not successful. "
-                   "Data will be divided into " + str(n_bins_low) + " "
-                   "resolution bins. "
-                   "Is the input MTZ file " + args.hklin + " OK?")
+    if refinement == "refmac":
+        # using `mtzdump` from CCP4 to get both n_i_obs_low and n_flag_sets
+        tool = "mtzdump"
+        p = subprocess.Popen(["mtzdump", "HKLIN", args.hklin],
+                             stdin=subprocess.PIPE,
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        com = "STATS NBIN 1 RESO " + twodec(res_low) + " " \
+            "" + twodec(args.res_init) + "\n end\n"
+        output, err = p.communicate(com)
+        # rc = p.returncode
+        try:
+            for line in output.splitlines():
+                if " * Number of Reflections = " in line:
+                    n_i_obs = int(line.split()[-1])
+                elif len(line.split()) == 12:
+                    if "free" in line.split()[-1].lower():
+                        n_flag_sets = int(float(line.split()[3])) - \
+                            int(float(line.split()[2])) + 1
+                elif " No. of reflections used in FILE STATISTICS" in line:
+                    n_i_obs_low = int(line.split()[-1])
+                    break
+        except ValueError:
+            n_bins_low = 12
+            warning_my("mtzdump",
+                       "Definition of binning "
+                       "and search for number of sets of free reflection "
+                       "using mtzdump were not successful. "
+                       "Data will be divided into " + str(n_bins_low) + " "
+                       "resolution bins. "
+                       "Is the input MTZ file " + args.hklin + " OK?")
+    elif refinement == "phenix":
+        from iotbx.reflection_file_reader import any_reflection_file
+        from iotbx import mtz
+        import cStringIO
+        tool = "CCTBX"
+        # 1. get n_i_obs_low using CCTBX
+        n_i_obs_low_list = []
+        n_i_obs_list = []
+        hkl_in = any_reflection_file(file_name=args.hklin)
+        miller_arrays = hkl_in.as_miller_arrays()
+        for column in miller_arrays:
+            if "xray" in str(column.observation_type()):
+                n_i_obs_list.append(column.size())
+                column_res_init = column.resolution_filter(
+                    d_max=float(res_low), d_min=float(args.res_init))
+                n_i_obs_low_list.append(column_res_init.size())
+        n_i_obs = min(n_i_obs_list)
+        n_i_obs_low = min(n_i_obs_low_list)
+        # 2. get n_flag_sets using CCTBX
+        mtz_object = mtz.object(file_name=args.hklin)
+        out = cStringIO.StringIO()
+        mtz_object.show_summary(out=out)
+        out = out.getvalue()
+        out_lines = out.splitlines()
+        for i in range(len(out_lines)):
+            if "free" in out_lines[i].lower():
+                j = i
+        if "j" in vars():
+            n_flag_sets = int(float(out_lines[j].split()[4])) - \
+                int(float(out_lines[j].split()[3])) + 1
+
     if n_flag_sets == 0:
         n_flag_sets = 20
         if args.complete_cross_validation:
-            warning_my("mtzdump_flags",
+            warning_my("flags",
                        "Search for number of sets of free reflection "
-                       "using mtzdump was not successful. "
+                       "using " + tool + " was not successful. "
                        "It will be assumed that 20 sets of free reflection "
                        "are present in the input MTZ file " + args.hklin + ".")
     else:
@@ -251,9 +293,9 @@ def def_res_shells(args, res_high_mtz, res_low=999):
                   "will be used in complete cross-validation.")
     if n_i_obs == 0 or n_i_obs_low == 0:
         n_bins_low = 12
-        warning_my("mtzdump_bins",
-                   "Definition of binning using mtzdump was not successful. "
-                   "Data will be divided into " + str(n_bins_low) + " "
+        warning_my("binning",
+                   "Definition of binning using " + tool + " was not success"
+                   "ful. Data will be divided into " + str(n_bins_low) + " "
                    "resolution bins. "
                    "Is the input MTZ file " + args.hklin + " OK?")
     else:  # If run of mtzdump was succesful
@@ -378,21 +420,26 @@ def def_res_shells(args, res_high_mtz, res_low=999):
     return shells, n_bins_low, n_flag_sets, default_shells_definition
 
 
-def res_high_from_pdb(xyzin):  # Tests missing
+def res_high_from_xyzin(xyzin, format=".pdb"):
     """Finds a line containing `RESOLUTION RANGE HIGH` in the file `xyzin`,
     picks the last word of the line (that should be the high resolution)
     and rounds it to two decimals. If it is not successful, returns -1.
 
     Args:
-        xyzin (str): Input structure model in the PDB format
+        xyzin (str): Input structure model (PDB or mmCIF format)
 
     Returns:
         float: initial high resolution limit rounded to two decimals or -1 if \
                it was not found
     """
-    res_high = extract_from_file(
-        filename=xyzin, searched="RESOLUTION RANGE HIGH", skip_lines=0,
-        n_lines=1, nth_word=-1, not_found='N/A', get_first=True)
+    if "cif" in format:
+        res_high = extract_from_file(
+            filename=xyzin, searched="_refine.ls_d_res_high", skip_lines=0,
+            n_lines=1, nth_word=-1, not_found='N/A', get_first=True)
+    else:  # pdb
+        res_high = extract_from_file(
+            filename=xyzin, searched="RESOLUTION RANGE HIGH", skip_lines=0,
+            n_lines=1, nth_word=-1, not_found='N/A', get_first=True)
     if res_high == 'N/A':
         return -1
     try:
@@ -432,7 +479,7 @@ def res_from_hklin_unmerged(hklin_unmerged):
     `hklin_unmerged`.
     In the case of an ASCII file from XDS, find it by
     searching the option `INCLUDE_RESOLUTION_RANGE` in the file.
-    In the case of an MTZ file, find it using `mtzdump`.
+    In the case of an MTZ file, find it using `xia2`.
     In the case of a SCA file, do not check.
 
     Args:
@@ -447,20 +494,32 @@ def res_from_hklin_unmerged(hklin_unmerged):
     res_low_from_hklin_unmerged = None
     # may be an MTZ file
     if  "mtz" in hklin_unmerged.split(".")[-1].lower():
-        # res_low_from_hklin_unmerged, res_high_from_hklin_unmerged = \
-        #     res_from_mtz(hklin_unmerged)  # This needs to much RAM...
-        p = subprocess.Popen(["mtzdump", "HKLIN", hklin_unmerged],
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        com = "end\n"
-        output, err = p.communicate(com)
-        for i in range(len(output.splitlines())):
-            if " *  Resolution Range :" in output.splitlines()[i]:
-                res_low_from_hklin_unmerged = \
-                    float(output.splitlines()[i + 2].split()[-5])
-                res_high_from_hklin_unmerged = \
-                    float(output.splitlines()[i + 2].split()[-3])
-                break
+        ### Solution 1 - CCTBX
+        ### res_low_from_hklin_unmerged, res_high_from_hklin_unmerged = \
+        ###     res_from_mtz(hklin_unmerged)  # This needs to much RAM...
+
+        ## Solution 2 - mtzdump
+        ## p = subprocess.Popen(["mtzdump", "HKLIN", hklin_unmerged],
+        ##                      stdin=subprocess.PIPE,
+        ##                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        ## com = "end\n"
+        ## output, err = p.communicate(com)
+        ## for i in range(len(output.splitlines())):
+        ##     if " *  Resolution Range :" in output.splitlines()[i]:
+        ##         res_low_from_hklin_unmerged = \
+        ##             float(output.splitlines()[i + 2].split()[-5])
+        ##         res_high_from_hklin_unmerged = \
+        ##             float(output.splitlines()[i + 2].split()[-3])
+        ##         break
+
+        # Solution 3 - xia2 - works with both CCP4 and phenix
+        from xia2.Wrappers.CCP4.Mtzdump import Mtzdump
+        m = Mtzdump()
+        m.set_hklin(hklin_unmerged)
+        m.dump()
+        res_low_from_hklin_unmerged, res_high_from_hklin_unmerged = \
+            m.get_resolution_range()
+        
     # may be an XDS ASCII file
     elif "hkl" in hklin_unmerged.split(".")[-1].lower():
         hklin_unmerged_head = []
@@ -481,55 +540,105 @@ def res_from_hklin_unmerged(hklin_unmerged):
     return res_low_from_hklin_unmerged, res_high_from_hklin_unmerged
 
 
-def check_refinement_software(args, refmac_version_installed):
+def check_refinement_software(args, versions_dict, refinement="refmac"):
     """
-    Check if the input structure model `args.xyzin` was refined in REFMAC5 and
-    in which version. If it was not refined or if it was refined in another
-    version of REFMAC5 than is now installed, write warning.
+    Check if the input structure model `args.xyzin` was refined in REFMAC5 
+    or phenix.refine and in which version (PDB and mmCIF format is accepted).
+    If it was not refined or if it was refined in another
+    version of REFMAC5 or phenix.refine than is now installed, write warning.
 
     Args:
-        args.xyzin (str): Input structure model in the PDB format
-        refmac_version_installed (str): Version of REFMAC that is installed
+        args.xyzin (str): Input structure model (PDB or mmCIF format)
+        versions_dict (dict): Dictionary containing a key `refmac_version` \
+                              or `phenix_version`.
+        refmac_version_installed (str): Version of REFMAC5 or phenix.refine \
+                                        that is installed
 
     Returns:
-        str: version of REFMAC5 that was used for the refinement of
-             `args.xyzin`, if it was not found, "N/A" is returned.
+        str: version of REFMAC5 or phenix.refine  that was used for the \
+             refinement of `args.xyzin`, if it was not found, "N/A" is returned
     """
-    refmac_version_xyzin = extract_from_file(
-        filename=args.xyzin, searched="REFMAC", skip_lines=0, n_lines=1,
-        nth_word=-1, not_found="N/A", get_first=True)
-    if args.prerefinement_ncyc:
-        return refmac_version_xyzin
-    if refmac_version_xyzin == "N/A":
-        warning_my("refmac_not_before",
-               "The input structure model `" + args.xyzin + "` seems not "
-               "to be refined in REFMAC5. "
-               "The obtained results could be misleading. "
-               "Consider refinement of the structure model "
-               "" + args.xyzin + " in REFMAC5. This could be performed "
-               "using the argument --prerefinement-ncyc")
+    if refinement == "refmac":
+        refinement_name = "REFMAC5"
+        version_installed = versions_dict["refmac_version"]
+        if "cif" in settings["pdbORmmcif"]:
+            refmac_confirm = extract_from_file(
+                filename=args.xyzin, searched="_software.name", skip_lines=0,
+                n_lines=1, nth_word=-1, not_found="N/A", get_first=True)
+            if refmac_confirm == "refmac":
+                version_xyzin = extract_from_file(
+                    filename=args.xyzin, searched="_software.version",
+                    skip_lines=0, n_lines=1, nth_word=-1, not_found="N/A",
+                    get_first=True)
+                version_xyzin = version_xyzin.replace("'", "")
+            else:
+                version_xyzin = "N/A"
+        else:  # pdb
+            version_xyzin = extract_from_file(
+                filename=args.xyzin, searched="REFMAC", skip_lines=0,
+                n_lines=1, nth_word=-1, not_found="N/A", get_first=True)
+    elif refinement == "phenix":
+        refinement_name = "phenix.refine"
+        version_installed = versions_dict["phenix_version"]
+        if "cif" in settings["pdbORmmcif"]:
+            phenix_confirm = extract_from_file(
+                filename=args.xyzin, searched="phenix.refine", skip_lines=0,
+                n_lines=1, nth_word=1, not_found="N/A", get_first=True)
+            if phenix_confirm == "phenix.refine":  # TO DO check
+                version_xyzin = extract_from_file(
+                    filename=args.xyzin, searched="phenix.refine",
+                    skip_lines=0, n_lines=1, nth_word=2, not_found="N/A",
+                    get_first=True)
+            else:
+                version_xyzin = "N/A"          
+        else:  # pdb
+            version_xyzin = extract_from_file(
+                filename=args.xyzin,
+                searched="REMARK   3   PROGRAM     : PHENIX",
+                skip_lines=0, n_lines=1, not_found="N/A", get_first=True)
+            version_xyzin = version_xyzin[0]
+            if version_xyzin != "N/A":
+                version_xyzin = version_xyzin.split()[5]
+                version_xyzin = version_xyzin.replace("(", "")
+                version_xyzin = version_xyzin.replace(")", "")
+        if version_xyzin != "N/A":
+            version_xyzin = version_xyzin.split("_")[0]
+    if args.prerefinement_ncyc:  # TO DO is it correct?
+        return version_xyzin
+    if version_xyzin == "N/A":
+        warning_my("refinement_not_before",
+                   "The input structure model `" + args.xyzin + "` seems not "
+                   "to be refined in " + refinement_name + ". "
+                   "The obtained results could be misleading. "
+                   "Consider refinement of the structure model "
+                   "" + args.xyzin + " in " + refinement_name + ". This could be "
+                   "performed using the arguments --" + refinement + " "
+                   "--prerefinement-ncyc")
     else:
-        if refmac_version_xyzin != refmac_version_installed:
-            warning_my("refmac_version_mismatch",
-                       "The version of REFMAC5 used for refinement of the "
-                       "input structure model `" + args.xyzin + "` ("
-                       "" + refmac_version_xyzin + ") is not the same as the "
-                       "version of REFMAC5 that is now installed and used "
-                       "during paired refinement ("
-                       "" + refmac_version_installed + "). "
+        if version_xyzin != version_installed:
+            warning_my("refinement_version_mismatch",
+                       "The version of " + refinement_name + " used for "
+                       "refinement of the  input structure model "
+                       "`" + args.xyzin + "` ("
+                       "" + version_xyzin + ") is not the same as the "
+                       "version of " + refinement_name + " that is now "
+                       "installed and used during paired refinement ("
+                       "" + version_installed + "). "
                        "The results from PAIREF could be misleading. "
                        "Consider refinement of the structure model "
-                       "`" + args.xyzin + "` using the installed version of "
-                       "REFMAC5. This could be performed"
-                       "using the argument --prerefinement-ncyc")
-    return refmac_version_xyzin
+                       "`" + args.xyzin + "` using the installed version of"
+                       " " + refinement_name + ". This could be performed "
+                       "using the arguments --" + refinement + " "
+                       "--prerefinement-ncyc")
+    return version_xyzin
 
 
-def res_opt(shell, args):
+def res_opt(shell, args, refinement="refmac"):
     """
     Finds optical resolution running command
     :code:`sfcheck -f project_Rflag_shellA.mtz -m project_Rflag_shellA.pdb`
     and writes the gained value into project_Optical_resolution.csv
+    PDB format is required, does not work with mmCIF.
 
     Args:
         shell (float): Current resolution shell
@@ -541,6 +650,8 @@ def res_opt(shell, args):
     """
     prefix = args.project + "_R" + str(args.flag).zfill(2) + "_" + \
         twodecname(shell) + "A"
+    if refinement == "phenix":
+        prefix += "_001"
     hklin = prefix + ".mtz"
     xyzin = prefix + ".pdb"
     command = ["sfcheck", "-f", hklin, "-m", xyzin]
@@ -705,7 +816,7 @@ def run_baverage(project, xyzin, res_init):
 
     Args:
         project (str): Name of the project
-        xyzin (str): Name of the PDB file containg the structure model
+        xyzin (str): Filename of structure model in PDB or mmCIF format
         res_init (float): Resolution of the input structure model
 
     Returns:
@@ -713,7 +824,10 @@ def run_baverage(project, xyzin, res_init):
     """
     prefix = project + "_" + twodecname(res_init) + "A_baverage"
     logout = prefix + ".log"
-    xyzout = prefix + ".pdb"
+    if "cif" in settings["pdbORmmcif"]:
+        xyzout = prefix + settings["pdbORmmcif"]
+    else:  # pdb
+        xyzout = prefix + settings["pdbORmmcif"]
     command = ["baverage", "XYZIN", xyzin, "RMSTAB",
                prefix + ".tab", "XYZOUT", xyzout]
     com = "end\n"
@@ -772,8 +886,9 @@ def run_pdbtools(args, baverage=0):
         baverage (float): Mean B-factor for all the atoms
 
     Returns:
-        str: Name of the modified PDB file
+        str: Filename of the modified structure model (PDB or mmCIF format)
     """
+    import shutil
     if not (args.reset_bfactor or args.add_to_bfactor or args.set_bfactor or
             args.shake_sites):
         # Nothing to do
@@ -797,14 +912,22 @@ def run_pdbtools(args, baverage=0):
 
     prefix = args.project + "_" + twodecname(args.res_init) + "A_modified"
     logout = prefix + ".log"
-    xyzout = prefix + ".pdb"
+    if "cif" in settings["pdbORmmcif"]:
+        xyzout = prefix + ".cif"
+    else:
+        xyzout = prefix + ".pdb"
     pdbtools_args.append("model_file_name=" + args.xyzin)
     pdbtools_args.append("file_name=" + xyzout)
     print("Modification of the input structure model - pdbtools arguments: " + 
         " ".join(pdbtools_args))
     with open(logout, "w") as logfile:
-        mmtbx.command_line.pdbtools.run(pdbtools_args, out=logfile)
+        mmtbx.command_line.pdbtools.run(pdbtools_args, out=logfile,
+                                        replace_stderr=False)
     if os.path.isfile(xyzout):
+        if "cif" in settings["pdbORmmcif"]:
+            # refmac required .mmcif (.cif does not work)
+            shutil.copy2(xyzout, xyzout[:-4] + ".mmcif")
+            xyzout = xyzout[:-4] + ".mmcif"
         return xyzout
     else:
         sys.stderr.write("ERROR: File " + xyzout + " has not been created "

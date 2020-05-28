@@ -1,4 +1,6 @@
+# coding: utf-8
 import os
+import sys
 import matplotlib
 matplotlib.use('agg')  # TKinter makes problems, agg should work
 import matplotlib.pyplot as plt
@@ -9,7 +11,9 @@ from collections import namedtuple
 import platform
 import shutil
 import cgi
+import warnings
 from .commons import twodec, twodecname, fourdec
+from .preparation import which
 from .settings import warning_dict, date_time
 
 
@@ -86,11 +90,15 @@ def matplotlib_bar(args, values="R-values", flag_sets=[], ready_shells=[]):
     xticklabels_list = []
     values_work_list = []
     values_free_list = []
+    errors_work_list = []
+    errors_free_list = []
 
-    def pick_work_free_from_csv_line(line, values_work_list, values_free_list):
+    def pick_work_free_from_csv_line(line, values_work_list, values_free_list,
+                                     errors_work_list, errors_free_list,
+                                     errors=False):
         if line.lstrip()[0] == "#":  # If it is a comment, do not load data
             continue_sign = True
-            return values_work_list, values_free_list, continue_sign
+            return values_work_list, values_free_list, errors_work_list, errors_free_list, continue_sign
         continue_sign = False
         try:
             values_work_list.append(float(line.split()[3]))
@@ -100,14 +108,26 @@ def matplotlib_bar(args, values="R-values", flag_sets=[], ready_shells=[]):
             values_free_list.append(float(line.split()[6]))
         except ValueError:
             values_free_list.append(None)
-        return values_work_list, values_free_list, continue_sign
+        if errors:  # return also standard error of mean
+            try:
+                errors_work_list.append(float(line.split()[9]))
+            except ValueError:
+                errors_work_list.append(float('nan'))            
+            try:
+                errors_free_list.append(float(line.split()[10]))
+            except ValueError:
+                errors_free_list.append(float('nan'))
+        else:
+            errors_work_list.append(float('nan'))
+            errors_free_list.append(float('nan'))
+        return values_work_list, values_free_list, errors_work_list, errors_free_list, continue_sign
 
     if flag_sets:
         # Chart for the complete cross-validation
         # (differences of statistics depending on to various FreeRflag sets)
         pngfilename = args.project + "_" + values + "_complete_" \
             "" + twodecname(ready_shells[-1]) + "A.png"
-        # Load data
+        # Load data - statistics relating to individual free refl. sets
         for flag in flag_sets:
             xticklabel = str(flag)
             xticklabels_list.append(xticklabel)
@@ -115,9 +135,11 @@ def matplotlib_bar(args, values="R-values", flag_sets=[], ready_shells=[]):
                 "" + values + ".csv"
             with open(csvfilename, "r") as csvfile:
                 last_line = csvfile.readlines()[-1]
-            values_work_list, values_free_list, continue_sign = \
+            values_work_list, values_free_list, errors_work_list, \
+                errors_free_list, continue_sign = \
                 pick_work_free_from_csv_line(
-                    last_line, values_work_list, values_free_list)
+                    last_line, values_work_list, values_free_list, 
+                    errors_work_list, errors_free_list)
         xticklabels_list = xticklabels_compress(xticklabels_list, n_max=21)
         # Count numbers of increases and decreases
         values_work_positive = sum(1 for i in values_work_list if float(i) > 0)
@@ -126,13 +148,14 @@ def matplotlib_bar(args, values="R-values", flag_sets=[], ready_shells=[]):
         values_free_positive = sum(1 for i in values_free_list if float(i) > 0)
         values_free_negative = sum(1 for i in values_free_list if float(i) < 0)
         values_free_zero = sum(1 for i in values_free_list if float(i) == 0)
-        # Average statistics
+        # Load data - average statistics
         csvfilename = args.project + "_" + values + ".csv"
         with open(csvfilename, "r") as csvfile:
             last_line = csvfile.readlines()[-1]
-        values_work_list, values_free_list, continue_sign = \
-            pick_work_free_from_csv_line(
-                last_line, values_work_list, values_free_list)
+        values_work_list, values_free_list, errors_work_list, \
+            errors_free_list, continue_sign = pick_work_free_from_csv_line(
+                last_line, values_work_list, values_free_list,
+                errors_work_list, errors_free_list, errors=True)
         xticklabels_list.append("avrg")
         # Prepare lists of colors
         color1 = ["#0065BD"] * len(flag_sets) + ["#156570"]
@@ -159,25 +182,6 @@ def matplotlib_bar(args, values="R-values", flag_sets=[], ready_shells=[]):
             r"\rightarrow \mathrm{" + twodec(ready_shells[-1]) + r"\AA}$"
 
     else:
-        # Chart showing differences of statistics depending on resolution
-        csvfilename = args.project + "_" + values + ".csv"
-        pngfilename = args.project + "_" + values + ".png"
-        # Load data
-        with open(csvfilename, "r") as csvfile:
-            for line in csvfile.readlines():
-                values_work_list, values_free_list, continue_sign = \
-                    pick_work_free_from_csv_line(
-                        line, values_work_list, values_free_list)
-                if continue_sign:
-                    continue
-                xticklabel = line.split()[0]
-                # xticklabel = xticklabel.replace("A", r"\AA")
-                # angstroem units are mentioned in the x-axis label
-                xticklabel = xticklabel.replace("A", "")
-                xticklabel = xticklabel.replace("->", r"\rightarrow")
-                xticklabel = r"$\mathrm{" + xticklabel + "}$"
-                xticklabels_list.append(xticklabel)
-        xticklabels_list = xticklabels_compress(xticklabels_list, n_max=21)
         # Define labels
         if values == "R-values":
             values_work_label = r'$\it{R}_{\mathrm{work}}$'
@@ -188,28 +192,52 @@ def matplotlib_bar(args, values="R-values", flag_sets=[], ready_shells=[]):
             values_free_label = r'$\it{CC}_{\mathrm{free}}$'
             values_abb = "CC"
         ax.set_xlabel(r'$\mathrm{Resolution\ step\ (\AA})$', fontsize=14)
+        # Chart showing differences of statistics depending on resolution
+        csvfilename = args.project + "_" + values + ".csv"
+        pngfilename = args.project + "_" + values + ".png"
         # Define graph title and bar colors
         if args.complete_cross_validation:
             graph_title = r'$\mathrm{Differences\ of\ overall\ } ' \
                 '' + values_abb + r'$-$\mathrm{values\ averaged\ over\ free\ sets}$'
             color1 = "#156570"
             color2 = "#00B2A9"
+            errors = True
         else:
             graph_title = r'$\mathrm{Differences\ of\ overall\ } ' \
                 '' + values_abb + r'$-$\mathrm{values}$'
             color1 = "#0065BD"
             color2 = "#6AADE4"
+            errors = False
+        # Load data
+        with open(csvfilename, "r") as csvfile:
+            for line in csvfile.readlines():
+                values_work_list, values_free_list, errors_work_list, \
+                    errors_free_list, continue_sign = \
+                    pick_work_free_from_csv_line(
+                        line, values_work_list, values_free_list,
+                        errors_work_list, errors_free_list, errors)
+                if continue_sign:
+                    continue
+                xticklabel = line.split()[0]
+                # xticklabel = xticklabel.replace("A", r"\AA")
+                # angstroem units are mentioned in the x-axis label
+                xticklabel = xticklabel.replace("A", "")
+                xticklabel = xticklabel.replace("->", r"\rightarrow")
+                xticklabel = r"$\mathrm{" + xticklabel + "}$"
+                xticklabels_list.append(xticklabel)
+        xticklabels_list = xticklabels_compress(xticklabels_list, n_max=21)
 
     n_groups = len(xticklabels_list)
     index = np.arange(n_groups)  # NumPy
     # Plot the chart
-    ber1 = ax.bar(index, values_work_list, bar_width,
+    bar1 = ax.bar(index, values_work_list, bar_width,
                   alpha=opacity, color=color1, linewidth=0,
-                  label=values_work_label)
-
+                  label=values_work_label,
+                  yerr=errors_work_list, capsize=5, ecolor='orange')
     bar2 = ax.bar(index + bar_width, values_free_list, bar_width,
                   alpha=opacity, color=color2, linewidth=0,
-                  label=values_free_label)  # , hatch="/")
+                  label=values_free_label,
+                  yerr=errors_free_list, capsize=5, ecolor='orange')  # , hatch="/")
     ax.set_title(graph_title, fontsize=16, y=1.04)
     ax.set_xticks(index + bar_width/2)
     ax.set_xticklabels(xticklabels_list)
@@ -222,14 +250,18 @@ def matplotlib_bar(args, values="R-values", flag_sets=[], ready_shells=[]):
         xticklabels_rotation = 90
     plt.setp(ax.get_xticklabels(), rotation=xticklabels_rotation,
              horizontalalignment='center', fontsize=14)
-    plt.savefig(pngfilename, bbox_inches="tight", dpi=96)
+    with warnings.catch_warnings():
+        # There is a bug in matplotlib 1.x.x
+        # https://github.com/matplotlib/matplotlib/issues/5209
+        warnings.simplefilter(action='ignore', category=FutureWarning)
+        plt.savefig(pngfilename, bbox_inches="tight", dpi=96)
     plt.clf()
     plt.close('all')
     return pngfilename
 
 
 def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
-                    multiscale=False, filename_suffix=""):
+                    multiscale=False, filename_suffix="", refinement="refmac"):
     """Plots statistics values (choice by `statistics`)
     `project+"_"+twodecname(shells[*])+"A.csv"`.
     Generate and save plot `project+"_"+statistic+".png` using `matplotlib`.
@@ -243,6 +275,7 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
         flag (int)
         multiscale (bool): Use 2 different y-axis for data lines
         filename_suffix (str)
+        refinement (str): "refmac" or "phenix"
 
     Returns:
         str:
@@ -262,6 +295,7 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
     ax.set_xlabel(r'Resolution ($\mathrm{\AA}$)')
     ax.set_ylabel('')
     ax.grid(color='#DCDCDC')
+    xticklabels_rotation = 0
 
     # Load xtickslabels from a model refined up to the highest resolution
     xshell_list = []
@@ -382,27 +416,49 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
         elif statistic == "Rwork_cyc" or statistic == "Rfree_cyc":
             values_list = []
             if statistic == "Rfree_cyc":
-                values_column = 2
+                values_column = 2  # for refmac
+                values_range = (20, 26)  # for phenix
                 values_label = r'$\it{R}_\mathrm{free}$'
                 color = "#6AADE4"
-            else:
-                values_column = 1
+            else:  # Rwork
+                values_column = 1  # for refmac
+                values_range = (27, 33)  # for phenix
                 values_label = r'$\it{R}_\mathrm{work}$'
                 color = "#0065BD"
-            logfilename = project + "_R" + str(flag).zfill(2) + "_" + \
-                twodecname(shells[-1]) + "A.log"
-            with open(logfilename, "r") as logfile:
-                lines = logfile.readlines()
-            for i in range(len(lines)):
-                if "    Ncyc    Rfact    Rfree     FOM      -LL     " \
-                        "-LLfree  rmsBOND  zBOND rmsANGL  zANGL rmsCHIRAL $$" \
-                        in lines[i]:
-                    j = i + 2
-            while lines[j].split()[0] != '$$':
-                values_list.append(float(lines[j].split()[values_column]))
-                if not len(xticklabels_list) == len(xshell_list):
-                    xticklabels_list.append(lines[j].split()[0])
-                j = j + 1
+            prefix = project + "_R" + str(flag).zfill(2) + "_" + \
+                    twodecname(shells[-1]) + "A"
+            if refinement == "refmac":
+                logfilename = prefix + ".log"
+                with open(logfilename, "r") as logfile:
+                    lines = logfile.readlines()
+                for i in range(len(lines)):
+                    if "    Ncyc    Rfact    Rfree     FOM      -LL     " \
+                            "-LLfree  rmsBOND  zBOND rmsANGL  zANGL rmsCHIRAL $$" \
+                            in lines[i]:
+                        j = i + 2
+                while lines[j].split()[0] != '$$':
+                    values_list.append(float(lines[j].split()[values_column]))
+                    if not len(xticklabels_list) == len(xshell_list):
+                        xticklabels_list.append(lines[j].split()[0])
+                    j = j + 1
+            elif refinement == "phenix":
+                xticklabels_rotation = 90
+                pdbfilename = prefix + "_001.pdb"
+                with open(pdbfilename, "r") as pdbfile:
+                    lines = pdbfile.readlines()
+                for i in range(len(lines)):
+                    if "REMARK  stage r-work r-free bonds angles " \
+                            "b_min b_max b_ave n_water shift" \
+                            in lines[i]:
+                        j = i + 1
+                while lines[j].split()[-1][-1] != '-':  # until hline ---------
+                    values_list.append(float(
+                        lines[j][values_range[0]:values_range[1]]))
+                    if not len(xticklabels_list) == len(xshell_list):
+                        xticklabel = lines[j][7:18]
+                        xticklabel.strip()
+                        xticklabels_list.append(xticklabel)
+                    j = j + 1
             xticklabels_list = xticklabels_compress(xticklabels_list, n_max=21)
             xshell_list = range(len(values_list))
             legend_loc = "best"
@@ -518,7 +574,8 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
     ax.set_title(graph_title, fontsize=16, y=1.03)
     plt.xticks(xshell_list)
     ax.set_xticklabels(xticklabels_list)
-    plt.setp(ax.get_xticklabels(), horizontalalignment='center')  # rotation=30
+    plt.setp(ax.get_xticklabels(), horizontalalignment='center',
+             rotation=xticklabels_rotation)
     plt.savefig(pngfilename, bbox_inches="tight", dpi=dpi)
     plt.clf()
     plt.close('all')
@@ -536,7 +593,6 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
         versions_dict (dict): Dictionary containing keys "refmac_version" and
                               "pairef_version"
         flag_sets (list)
-        current_shell (float)
         res_cur (float)
         ready_merging_statistics (bool)
         done (bool)
@@ -625,8 +681,11 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
                 "in all the refinement runs)"
         page += "</td></tr>\n"
     if args.comin:
-        page += "\t\t<tr><td>Setting for REFMAC5:</td>" \
+        page += "\t\t<tr><td>Keywords for REFMAC5:</td>" \
             "<td>" + args.comin + "</td></tr>\n"
+    if args.defin:
+        page += "\t\t<tr><td>Keywords for phenix.refine:</td>" \
+            "<td>" + args.defin + "</td></tr>\n"
     if args.weight:
         page += "\t\t<tr><td>Weight matrix for REFMAC5:</td>" \
             "<td>" + fourdec(args.weight) + "</td></tr>\n"
@@ -689,16 +748,23 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
         "" + getpass.getuser() + "@" + socket.gethostname() + "</td></tr>\n"
     page += "\t\t<tr><td><i>PAIREF</i> version:</td>" \
         "<td>" + versions_dict["pairef_version"] + "</td></tr>\n"
-    page += "\t\t<tr><td><i>REFMAC5</i> version:</td>" \
-        "<td>" + versions_dict["refmac_version"] + "</td></tr>\n"
-    page += "\t\t<tr><td>Python version:</td>" \
-        "<td>" + platform.python_version() + "</td></tr>\n"
+    if args.phenix:
+        page += "\t\t<tr><td><i>phenix.refine</i> version:</td>" \
+            "<td>" + versions_dict["phenix_version"] + "</td></tr>\n"
+    else:
+        page += "\t\t<tr><td><i>REFMAC5</i> version:</td>" \
+            "<td>" + versions_dict["refmac_version"] + "</td></tr>\n"
+    page += "\t\t<tr><td>Python version and executable:</td>" \
+        "<td>" + platform.python_version() + " " + \
+        sys.executable + "</td></tr>\n"
+    page += "\t\t<tr><td>matplotlib version:</td>" \
+        "<td>" + matplotlib.__version__ + "</td></tr>\n"
     page += "\t\t</table>\n"
 
     # Show general warnings if there are some
-    warning_keys = ["workdir", "low_res", "refmac_version_mismatch",
-                    "refmac_not_before", "no_modification",
-                    "mtzdump", "mtzdump_bins", "mtzdump_flags"]
+    warning_keys = ["workdir", "low_res", "refinement_version_mismatch",
+                    "refinement_not_before", "no_modification",
+                    "mtzdump", "binning", "flags", "amb_labels"]
     page = warning_orangebox(warning_keys, page)
     if ready_shells:
         if len(ready_shells) >= 2:
@@ -719,7 +785,10 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
             page += '</pre>'
             page += '\n\t\t\t\t<p class="note">Note: For each incremental ' \
                 'step of resolution from X->Y, the <i>R</i>-values were ' \
-                'calculated at resolution X.</p>\n'
+                'calculated at resolution X.'
+            if args.complete_cross_validation:
+                page += ' Standard error of mean is shown in orange.'
+            page += '</p>\n'
             page += '\t\t\t</div>\n'
             page += '\t\t\t<div class="column">\n'
             page += '\t\t\t\t<a href="' + args.project + '_Rgap.png">' \
@@ -830,8 +899,14 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
                 prefix = args.project + '_R' + str(flag).zfill(2) + \
                     '_' + twodecname(shell) + 'A'
                 pngfilename = prefix + '_stats_vs_cycle.png'
-                logfilename = prefix + '.log'
-                pdbfilename = prefix + '.pdb'
+                if args.phenix:
+                    logfilename = prefix + '_001.log'
+                    pdbfilename = prefix + '_001.pdb'
+                    ciffilename = prefix + '_001.cif'
+                else:  # refmac
+                    logfilename = prefix + '.log'
+                    pdbfilename = prefix + '.pdb'
+                    ciffilename = prefix + '.mmcif'
                 if os.path.isfile(pngfilename):
                     page += '\t\t\t<div class="column">\n'
                     page += '\t\t\t\t<a href="' + pngfilename + '">' \
@@ -839,11 +914,12 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
                         '' + twodec(shell) + 'A statistics vs. cycle, ' \
                         'flag ' + str(flag).zfill(2) + '"></a><br />\n'
                     page += '\t\t\t\t<a href="' + logfilename + '">' \
-                        'Log file from refinement at ' \
-                        '' + twodec(shell) + ' &#8491;</a><br />\n'
-                    page += '\t\t\t\t<a href="' + pdbfilename + '">' \
-                        'Structure model refined at ' \
-                        '' + twodec(shell) + ' &#8491;</a>\n'
+                        'Log file</a> from refinement at ' \
+                        '' + twodec(shell) + ' &#8491;<br />\n'
+                    page += '\t\t\t\t' \
+                        'Structure model refined at ' + twodec(shell) + ' ' \
+                        '&#8491; <a href="' + pdbfilename + '">PDB</a> ' \
+                        '<a href="' + ciffilename + '">mmCIF</a>\n'
                     page += '\t\t\t</div>\n'
             page += '\t\t</div>\n'
             page += '\t\t</div>\n'
@@ -851,11 +927,19 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
 \t<h2>References</h2>
 \t\tPlease reference the used software:
 \t\t<ul>
-\t\t<li>Paired refinement under control of <i>PAIREF</i>. M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko (2020) (to be published)</li>
-\t\t<li>Overview of the <i>CCP</i>4 suite and current developments. Collaborative Computational Project, Number 4 (2011) <i>Acta Cryst. D</i><b>67</b>:235–242</li>
-\t\t<li><i>REFMAC</i>5 for the refinement of macromolecular crystal structures. G.N. Murshudov, P. Skubak, A.A. Lebedev, N.S. Pannu, R.A. Steiner, R.A. Nicholls, M.D. Winn, F. Long, A.A. Vagin (2011) <i>Acta Cryst. D</i><b>67</b>:355–367</li>
+\t\t<li>Paired refinement under control of <i>PAIREF</i>. M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko (2020) <i>IUCrJ</i> (to be published)</li>
+"""
+    if not args.phenix or "ccp4" in sys.executable.lower():
+        page += "\t\t<li>Overview of the <i>CCP</i>4 suite and current developments. Collaborative Computational Project, Number 4 (2011) <i>Acta Cryst. D</i><b>67</b>:235–242</li>\n"
+    if args.phenix:
+        page += "\t\t<li>Macromolecular structure determination using X-rays, neutrons and electrons: recent developments in <i>Phenix</i>. D. Liebschner, P.V. Afonine, M.L. Baker, G. Bunkóczi, V.B. Chen, T.I. Croll, B. Hintze, L.W. Hung, S. Jain, A.J. McCoy, N.W. Moriarty, R.D. Oeffner, B.K. Poon, M.G. Prisant, R.J. Read, J.S. Richardson, D.C. Richardson, M.D. Sammito, O.V. Sobolev, D.H. Stockwell, T.C. Terwilliger, A.G. Urzhumtsev, L.L. Videau, C.J. Williams, P.D. Adams (2019) <i>Acta Cryst. D</i><b>75</b>:861-877</li>\n"
+        page += "\t\t<li>Towards automated crystallographic structure refinement with <i>phenix.refine</i>. P.V. Afonine, R.W. Grosse-Kunstleve, N. Echols, J.J. Headd, N.W. Moriarty, M. Mustyakimov, T.C. Terwilliger, A. Urzhumtsev, P.H. Zwart, P.D. Adams (2012) <i>Acta Cryst. D</i><b>68</b>:352-67</li>\n"
+    else:
+        page += "\t\t<li><i>REFMAC</i>5 for the refinement of macromolecular ""crystal structures. G.N. Murshudov, P. Skubak, A.A. Lebedev, N.S. Pannu, R.A. Steiner, R.A. Nicholls, M.D. Winn, F. Long, A.A. Vagin (2011) <i>Acta Cryst. D</i><b>67</b>:355–367</li>\n"
+    if which("sfcheck"):
+        page += "\t\t<li><i>SFCHECK</i>: a unified set of procedures for evaluating the quality of macromolecular structure-factor data and their agreement with the atomic model. A.A. Vaguine, J. Richelle, S.J. Wodak (1999) <i>Acta Cryst. D</i><b>55</b>:191–205</li>\n"
+    page += """
 \t\t<li>The <i>Computational Crystallography Toolbox</i>: crystallographic algorithms in a reusable software framework. R.W. Grosse-Kunstleve, N.K. Sauter, N.W. Moriarty, P.D. Adams (2002) <i>J. Appl. Crystallogr.</i> <b>35</b>:126–136</li>
-\t\t<li><i>SFCHECK</i>: a unified set of procedures for evaluating the quality of macromolecular structure-factor data and their agreement with the atomic model. A.A. Vaguine, J. Richelle, S.J. Wodak (1999) <i>Acta Cryst. D</i><b>55</b>:191–205</li>
 \t\t</ul>
 \t\t&nbsp;
 \t\t<ul>
@@ -873,7 +957,8 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
         htmlfile.write(page)
 
     # Styles
-    cssfilepath = str(os.path.dirname(__file__)) + "/static/styles.css"
+    cssfilepath = str(os.path.dirname(os.path.abspath(__file__))) + \
+        "/static/styles.css"
     if os.path.isfile(cssfilepath):
         shutil.copy2(cssfilepath, ".")
 

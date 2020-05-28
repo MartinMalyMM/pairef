@@ -3,7 +3,7 @@
 
 *Automatic PAIRed REFinement protocol*
 
-*PAIREF* is a tool for macromolecular crystallographers that performs the *PAIRed REFinement protocol* [1]_ automatically to estimate the optimal high-resolution cutoff. It is developed in Python 2.7 and can be installed as a module into the `Computational Crystallography Toolbox <https://cci.lbl.gov/cctbx_docs/index.html>`_. It provides a command-line interface that executes all the needed calculations. Parameters of refinement can be specified in detail to put all the calculations under full control of the user. Obtained results are presented as plots and tables in HTML log file. `REFMAC5 <http://www.ccp4.ac.uk/html/refmac5.html>`_ (part of the `CCP4 Software Suite <http://www.ccp4.ac.uk/>`_) is used for structure model refinement.
+*PAIREF* is a tool for macromolecular crystallographers that performs the *PAIRed REFinement protocol* [1]_ automatically to estimate the optimal high-resolution cutoff. It is developed in Python 2.7 and can be installed as a module into the `Computational Crystallography Toolbox <https://cci.lbl.gov/cctbx_docs/index.html>`_. It provides a command-line interface that executes all the needed calculations. Parameters of refinement can be specified in detail to put all the calculations under full control of the user. Obtained results are presented as plots and tables in HTML log file. *PAIREF* supports `REFMAC5 <http://www.ccp4.ac.uk/html/refmac5.html>`_ (part of the `CCP4 Software Suite <http://www.ccp4.ac.uk/>`_) and `phenix.refine <https://www.phenix-online.org/documentation/reference/refinement.html>`_ (part of the `PHENIX <https://www.phenix-online.org/documentation/reference/refinement.html>`_) for structure model refinement.
 
 .. image:: README_images/example_head.gif
 
@@ -14,7 +14,7 @@
 Installation and system requirements
 ------------------------------------
 
-*PAIREF* depends on the `CCP4 Software Suite <http://www.ccp4.ac.uk/>`_ (it contains `Computational Crystallography Toolbox <https://cci.lbl.gov/cctbx_docs/index.html>`_ with Python 2.7 and `pip <https://pip.pypa.io/en/stable/>`_).
+*PAIREF* depends on the `CCP4 Software Suite <http://www.ccp4.ac.uk/>`_ or `PHENIX <https://www.phenix-online.org/documentation/reference/refinement.html>_`. Both contain the `Computational Crystallography Toolbox <https://cci.lbl.gov/cctbx_docs/index.html>`_ with Python 2.7 and `pip <https://pip.pypa.io/en/stable/>`_).
 
 *PAIREF* can be easily installed running command :code:`cctbx.python -m pip install pairef --user --no-deps` in terminal (GNU/Linux, macOS) or CCP4Console (Windows). More information are available in `documentation <https://pairef.fjfi.cvut.cz/docs/installation.html>`_. Check also the *PAIREF* homepage at `<https://pairef.fjfi.cvut.cz/>`_ and `PyPI repository <https://pypi.org/project/pairef/>`_.
 

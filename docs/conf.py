@@ -20,13 +20,13 @@
 # -- Project information -----------------------------------------------------
 
 project = u'PAIREF Documentation'
-copyright = u'2019, Martin Maly'
+copyright = u'2019-2020, Martin Maly'
 author = u'Martin Maly'
 
 # The short X.Y version
 version = u''
 # The full version, including alpha/beta/rc tags
-release = u'1.0.0'
+release = u'1.2.0'
 
 
 # -- General configuration ---------------------------------------------------

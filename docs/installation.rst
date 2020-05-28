@@ -6,7 +6,7 @@ Installation
 System requirements
 -------------------
 
-*PAIREF* is a multiplatformal Python module and works on GNU/Linux, Windows and macOS. It depends on the `CCP4 Software Suite <http://www.ccp4.ac.uk/>`_ (it contains `Computational Crystallography Toolbox <https://cci.lbl.gov/cctbx_docs/index.html>`_ with Python 2.7 and `pip <https://pip.pypa.io/en/stable/>`_).
+*PAIREF* is a multiplatformal Python module and works on GNU/Linux, Windows and macOS. *PAIREF* depends on the `CCP4 Software Suite <http://www.ccp4.ac.uk/>`_ or `PHENIX <https://www.phenix-online.org/documentation/reference/refinement.html>_`. Both contain the `Computational Crystallography Toolbox <https://cci.lbl.gov/cctbx_docs/index.html>`_ with Python 2.7 and `pip <https://pip.pypa.io/en/stable/>`_).
 
 Installation
 ------------

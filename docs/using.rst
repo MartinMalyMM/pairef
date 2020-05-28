@@ -27,27 +27,35 @@ Now, you would like to perform the paired refinement protocol and use step-by-st
 
 Then a new folder *pairef_nuclease* is created in the folder where the command has been executed and all the log files, new structure models, *etc.*, will be saved there. Open a file *PAIREF_nuclease.html* in a web browser to see the current progress, results, plots, and statistics.
 
-*PAIREF* will refine the input structure model in *REFMAC5* (default 10 cycles) against data up to 1.9 Å. Then it will calculate statistics relating to the refined model (also using *REFMAC5*) and plot graphs. After that, the refined model will be further refined against data up to 1.8 Å and its relating statistics will be computed. This will be also performed using the remaining high resolution diffraction limits 1.7 Å, 1.6 Å, and 1.5 Å. In the end, merging statisting will be calculated.
+*PAIREF* will refine the input structure model (default 10 cycles in *REFMAC5*) against data up to 1.9 Å. Then it will calculate statistics relating to the refined model and plot graphs. After that, the refined model will be further refined against data up to 1.8 Å and its relating statistics will be computed. This will be also performed using the remaining high resolution diffraction limits 1.7 Å, 1.6 Å, and 1.5 Å. In the end, merging statisting will be calculated.
 
 Detailed specification of refinement parameters
 -----------------------------------------------
 
 To obtain meaningful results, the refinement setting during the paired refinement protocol should be very similar to the setting that has been used in previous refinement steps. `PAIREF` provides many option to run all the calculations under full control of the user.
 
+Refinement software
++++++++++++++++++++
+
+Options :code:`-R` or :code:`--refmac` specify refinement in *REFMAC5* (default), whereas options :code:`-P` or :code:`--phenix` refinement in *phenix.refine*.
+
 Using external *CIF file* (*LIBIN*)
 +++++++++++++++++++++++++++++++++++
 
 If a *CIF file* with external restrains has been used in previous refinement steps, it should be specified to be used also in the paired refinement. This can be specified with an option :code:`--LIBIN some_restrains.cif` (assuming that the file is saved in the folder where `PAIREF` is executed.
 
-Weighting term
-++++++++++++++
-
-The weight of the X-ray term can be specified using option :code:`-w value`, *e.g.* :code:`-w 0.5`.
-
 Number of refinement cycles
 +++++++++++++++++++++++++++
 
-The number of refinement cycles that is be performed in every resolution step can be controlled using an option :code:`--ncyc value`, *e.g.* :code:`--ncyc 20`. The default setting is 10 cycles.
+The number of refinement cycles that is be performed in every resolution step can be controlled using an option :code:`--ncyc value`, *e.g.* :code:`--ncyc 20`. The default setting is 10 cycles in *REFMAC5* or 3 macro cycles in *phenix.refine*.
+
+Special options for *REFMAC5*
+-----------------------------
+
+Weighting term
+++++++++++++++
+
+The weight of the X-ray term for *REFMAC5* can be specified using option :code:`-w value`, *e.g.* :code:`-w 0.5`.
 
 TLS refinement
 ++++++++++++++
@@ -61,15 +69,40 @@ A *Com file* (*command file*) is a text file describing refinement parameters fo
 
 To obtain a *command file* of particular refinement job in CCP4, select the last refinement job and press *ReRun Job..* . In a newly opened dialog, do not press *Run Now* but select *Run & View Com File* (details are described in the `CCP4 documentation <http://www.ccp4.ac.uk/dist/checkout/ccp4i/help/general/runjob.html>`_). Then a new dialog is opened -- the text at the bottom is the content of the *command file*. Select it, press *Ctrl+C* to copy it, paste it in a text editor and save it as *e. g.* *setting.com* in the folder where the diffraction data and model are placed.
 
-The *command file* is specified with an option :code:`-c setting.com` where *setting.com* is the file containing parameters for *REFMAC5*.
+The *command file* is specified with an option :code:`-c setting.com` or :code:`--comfile setting.com` where *setting.com* is the file containing parameters for *REFMAC5*.
 
 .. note::
    Even thought the weight of the X-ray term or the number of refinement cycles are set in the *Com file* (*REFMAC5* keywords :code:`WEIGht MATRix` and :code:`NCYC`), the values specified by the options :code:`--weight` and :code:`--ncyc` have the higher priority.
 
+Constant FFT-grid
++++++++++++++++++
+
+To keep the highest resolution FFT-grid in all the calculations, run *PAIREF* with an option :code:`--constant-grid`. The grid is then controlled by a *REFMAC5* keyword `SHANnon_factor <http://www.ccp4.ac.uk/html/refmac5/keywords/xray-general.html#shan>`_.
+
+Special option for *phenix.refine*
+----------------------------------
+
+*phenix.refine* parameters
+++++++++++++++++++++++++++
+
+Refinement parameters for *phenix.refine* can be defined in a text file. Here, *e.g.* target weights or TLS groups can be set. See `documentation of the program <https://www.phenix-online.org/documentation/reference/refinement.html#giving-parameters-on-the-command-line-or-in-files>`_ for more information. For example, it can contain a following content:
+
+.. code::
+
+   refinement.refine.strategy=tls+individual_sites+individual_adp
+   refinement.refine.adp.tls="chain A"
+   refinement.refine.adp.tls="chain B"
+   refinement.main.number_of_macro_cycles=4
+   refinement.target_weights.wxc_scale=3
+   refinement.target_weights.wxu_scale=5
+   refinement.simulated_annealing.start_temperature=5000
+
+This file can be specified with an option :code:`-d phenix_params.def` or :code:`--def phenix_params.def` where *phenix_params.def* is a file name.
+
 Modification of input structure model
 -------------------------------------
 
-The input structure model can be modified and refined at the starting resolution before the paired refinement. These options should be used if the structure has been refined in another software (*e.g.* *phenix.refine*, or another version of *REFMAC5* than it is currently used, or the bias of previous free reflection selection is present. The number of refinement cycles at the starting resolution is be controlled by the option :code:`--prerefinement-ncyc` (20 cycles by default).
+The input structure model can be modified and refined at the starting resolution before the paired refinement. These options should be used if the structure has been refined in another software or another version than it is currently used, or the bias of previous free reflection selection is present. The number of refinement cycles at the starting resolution is be controlled by the option :code:`--prerefinement-ncyc` (20 cycles by default).
 
 Possible modifications of the structure model:
 
@@ -85,12 +118,14 @@ Summary of program options
 .. code ::
 
    $ cctbx.python -m pairef -h
-   usage: cctbx.python -m pairef --XYZIN XYZIN --HKLIN HKLIN [-u HKLIN_UNMERGED]
-                                 [--LIBIN LIBIN] [-c COMIN] [-p PROJECT]
-                                 [-r RES_SHELLS] [-n N_SHELLS] [-s STEP]
-                                 [-i RES_INIT] [-f FLAG] [-w WEIGHT]
+   usage: cctbx.python -m pairef [--GUI] --XYZIN XYZIN --HKLIN HKLIN
+                                 [-u HKLIN_UNMERGED] [--LIBIN LIBIN]
+                                 [--TLSIN TLSIN] [-c COMIN] [-d DEFIN] [-R | -P]
+                                 [-p PROJECT] [-r RES_SHELLS] [-n N_SHELLS]
+                                 [-s STEP] [-i RES_INIT] [-f FLAG] [-w WEIGHT]
                                  [--ncyc NCYC] [--constant-grid] [--complete]
-                                 [-h] [--prerefinement-ncyc PREREFINEMENT_NCYC]
+                                 [--TLS-ncyc TLS_NCYC] [--TLSIN-keep] [-h]
+                                 [--prerefinement-ncyc PREREFINEMENT_NCYC]
                                  [--prerefinement-reset-bfactor]
                                  [--prerefinement-add-to-bfactor ADD_TO_BFACTOR]
                                  [--prerefinement-set-bfactor SET_BFACTOR]
@@ -100,19 +135,25 @@ Summary of program options
    Automatic PAIRed REFinement protocol
    
    optional arguments specifying input files:
+     --GUI, --gui          Start graphical user interface
      --XYZIN XYZIN, --xyzin XYZIN
-                           PDB file with current structure model
+                           PDB or mmCIF file with current structure model
      --HKLIN HKLIN, --hklin HKLIN
                            MTZ file with processed diffraction data
      -u HKLIN_UNMERGED, --unmerged HKLIN_UNMERGED
-                           unmerged processed diffraction data file
-                           (XDS_ASCII.HKL)
+                           unmerged processed diffraction data file (e.g.
+                           XDS_ASCII.HKL or data_unmerged.mtz)
      --LIBIN LIBIN, --libin LIBIN
                            CIF file geometric restraints
      --TLSIN TLSIN, --tlsin TLSIN
-                           input TLS file
+                           input TLS file (only for REFMAC5)
      -c COMIN, --comfile COMIN
-                           configuration Com file for REFMAC5
+                           configuration Com file with keywords for REFMAC5
+     -d DEFIN, --def DEFIN
+                           configuration def file with keywords for phenix.refine
+     -R, --refmac          Use REFMAC5 (default)
+     -P, --phenix          Use phenix.refine
+
    
    other optional arguments:
      -p PROJECT, --project PROJECT
@@ -126,24 +167,24 @@ Summary of program options
      -s STEP, --step STEP  width of the added high resolution shells (in
                            angstrom). Using this argument, setting of argument -n
                            is required.
-     -i RES_INIT           initial high resolution diffraction limit (in
+     -i RES_INIT           initial high-resolution diffraction limit (in
                            angstrom) - if it is not necessary, do not use this
                            option, the script should find resolution
-                           automatically in PDB file
+                           automatically in PDB or mmCIF file
      -f FLAG, --flag FLAG  definition which FreeRflag set will be excluded during
                            refinement (set 0 default)
      -w WEIGHT, --weight WEIGHT
-                           manual definition of weighting term for REFMAC5
+                           manual definition of weighting term (only for REFMAC5)
      --ncyc NCYC           number of refinement cycles that will be performed in
                            every resolution step
      --constant-grid       keep the same FFT grid through the whole paired
-                           refinement.
+                           refinement. (only for REFMAC5)
      --complete            perform complete cross-validation (use all available
                            free reflection sets)
      --TLS-ncyc TLS_NCYC   number of cycles of TLS refinement (10 cycles by
-                           default)
+                           default, only for REFMAC5)
      --TLSIN-keep          keep using the same TLS input file in all the
-                           refinement runs
+                           refinement runs (only for REFMAC5)
      -h, --help            show this help message and exit
    
    optional arguments specifying structure model modification:
@@ -158,8 +199,9 @@ Summary of program options
                            bfactor, --prerefinement-shake-sites, and
                            --prerefinement-no-modification. These options can be
                            useful when the structure has been refined in another
-                           version of REFMAC5 than it is currently used or when
-                           you want to reset the impact of used free reflections.
+                           version of REFMAC5 or phenix.refine than it is
+                           currently used or when you want to reset the impact of
+                           used free reflections.
      --prerefinement-reset-bfactor
                            reset atomic B-factors of the input structure model to
                            the mean value. This is done by default in the case of
@@ -179,7 +221,7 @@ Summary of program options
                            do not modify the input structure model before the
                            complete cross-validation protocol
    
-   Dependencies: CCP4 package containing CCTBX with Python 2.7
+   Dependencies: CCP4 Software Suite or PHENIX containing CCTBX with Python 2.7
 
 Example: 
 
@@ -195,7 +237,7 @@ Example:
 
 .. code ::
 
-   cctbx.python -m pairef --HKLIN data_full_resolution.mtz --XYZIN nuclease_model.pdb -u XDS_ASCII_full.HKL --LIBIN ligands.cif -c setting.com -i 2 -r 1.9,1.8,1.7,1.6,1.5 -w 0.04 --ncyc 15 -p nuclease
+   cctbx.python -m pairef --HKLIN data_full_resolution.mtz --XYZIN nuclease_model.pdb -u XDS_ASCII_full.HKL --LIBIN ligands.cif --refmac -c setting.com -i 2 -r 1.9,1.8,1.7,1.6,1.5 -w 0.04 --ncyc 15 -p nuclease
 
 The command file *setting.com* is the following text file:
 
@@ -222,7 +264,7 @@ Advanced options
 ----------------
 
 Complete cross-validation
-+++++++++++++++++++++++++
+-------------------------
 
 To run the paired refinement protocol for each individual free reflections set (*e.i.* to perform the complete cross-validation), use an option :code:`--complete`. The input structure model is modified to remove the bias of previous free reflection selection. The default setting is: 
 
@@ -230,11 +272,6 @@ To run the paired refinement protocol for each individual free reflections set (
 * ADPs are set to their average value. 
 
 The modified model is then refined at the starting resolution, the number of refinement cycles is controlled by an option :code:`--prerefinement-ncyc` (20 cycles by default). To disable the automatic modification, use an option :code:`--prerefinement-no-modification`. For further information about the input model modification, see the section `Modification of input structure model`_.
-
-Constant FFT-grid
-+++++++++++++++++
-
-To keep the highest resolution FFT-grid in all the calculations, run `PAIREF` with an option :code:`--constant-grid`. The grid is then controlled by a *REFMAC5* keyword `SHANnon_factor <http://www.ccp4.ac.uk/html/refmac5/keywords/xray-general.html#shan>`_.
 
 Problems
 --------

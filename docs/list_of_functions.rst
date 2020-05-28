@@ -25,10 +25,10 @@ pairef.preparation module
     :undoc-members:
     :show-inheritance:
 
-pairef.refinement\_refmac module
+pairef.refinement module
 --------------------------------
 
-.. automodule:: pairef.refinement_refmac
+.. automodule:: pairef.refinement
     :members:
     :undoc-members:
     :show-inheritance:
@@ -45,6 +45,14 @@ pairef.commons module
 ---------------------
 
 .. automodule:: pairef.commons
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+pairef.gui module
+-----------------
+
+.. automodule:: pairef.gui
     :members:
     :undoc-members:
     :show-inheritance:

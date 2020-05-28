@@ -6,7 +6,7 @@ with open('README.rst') as f:
 
 setup(
     name='pairef',
-    version='1.0.0',
+    version='1.2.0',
     description='Automatic PAIRed REFinement protocol',
     long_description=long_description,
     author='Martin Maly',
@@ -34,10 +34,13 @@ setup(
     entry_points={
         'console_scripts': [
             'pairef = pairef.launcher:run_pairef',
+            'pairef-gui = pairef.gui:gui',
         ]
     },
     install_requires=['numpy', 'matplotlib'],
     package_data={'pairef': ['static/*.css']},
+    data_files=[('bitmaps', ['pairef/static/pairef_logo_64.png'])],
+    include_package_data=True,
     setup_requires=['pytest-runner'],
     tests_require=['pytest'],
 )

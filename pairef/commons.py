@@ -1,3 +1,4 @@
+# coding: utf-8
 import sys
 from .settings import warning_dict
 
@@ -108,7 +109,7 @@ def extract_from_file(filename, searched, skip_lines, n_lines,
             sys.exit(1)
         elif not_found == "N/A":
             if not nth_word:
-                lines_array = list("N/A")
+                lines_array = ["N/A"]
                 return lines_array
             else:
                 word = "N/A"
@@ -126,6 +127,7 @@ def extract_from_file(filename, searched, skip_lines, n_lines,
                                  "a proper format. "
                                  "Statistics could not be found.\n"
                                  "Aborting.\n")
+                sys.exit(1)
             elif not_found == "N/A":
                 word = "N/A"
         return word

@@ -3,8 +3,7 @@
 
 # You can set these variables from the command line.
 SPHINXOPTS    =
-#SPHINXBUILD   = sphinx-build
-SPHINXBUILD   = /protein2/phenix/phenix-1.16-3546/build/bin/sphinx.build
+SPHINXBUILD   = sphinx-build
 SPHINXPROJ    = pairef
 SOURCEDIR     = .
 BUILDDIR      = _build

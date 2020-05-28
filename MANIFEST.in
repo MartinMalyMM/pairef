@@ -1,4 +1,6 @@
 include LICENSE
+include pairef/static/pairef_logo_64.png
+include pairef/static/*.css
 include test/*
 include test/fixtures/*
 include docs/*
