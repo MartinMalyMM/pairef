@@ -3,7 +3,7 @@
 Credits
 =======
 
-Please reference: M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko: "Paired refinement under control of PAIREF." (2020) (*to be published*)
+Please reference: M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko: `Paired refinement under the control of PAIREF <https://journals.iucr.org/m/issues/2020/04/00/mf5044/index.html>`_ (2020) *IUCrJ* **7**
 
 *PAIREF* is developed by Martin Malý (1,2), `martin.maly@fjfi.cvut.cz <mailto:martin.maly@fjfi.cvut.cz>`_. Collaborators: Petr Kolenko (1,2), Jan Dohnálek (2), Kay Diederichs (3).
 

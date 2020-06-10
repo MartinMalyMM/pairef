@@ -136,13 +136,6 @@ solvent YES
         prefix += "_comparison_at_" + twodecname(res_high) + "A_prev_pair"
         com += "\n ncyc 0"
         com += "\n bins " + str(n_bins_low)
-    # elif mode == "comp_shell":
-    #     # print("       Calculating statistics of the refined
-    # structure model...")
-    #    prefix = args.project + "_" + twodecname(res_cur) + "A_comparison"
-    #             "_at_" + twodecname(res_high) + "A"
-    #    com += "\n ncyc 0"
-    #    com += "\n bins 2"
     elif mode == "first":
         prefix += ""
         if args.complete_cross_validation:
@@ -250,8 +243,6 @@ solvent YES
             sys.exit(1)
     # Copy log and tls while running REFMAC5 at the starting resolution
     if mode == "first":
-        # prefix = args.project + "_" + twodecname(res_cur) + "A_range"
-        #         "_" + twodecname(res_low) + "--" + twodecname(res_high) + "A"
         prefix_copy = prefix + "_comparison_at_" + twodecname(res_high) + "A"
         shutil.copy2(logout, prefix_copy + ".log")
         shutil.copy2(hklout, prefix_copy + ".mtz")
@@ -413,20 +404,6 @@ def refinement_phenix(res_cur,
             com += "\nrefinement.main.number_of_macro_cycles=3"
         if args.quick:
             com += "\nrefinement.main.number_of_macro_cycles=1"
-    # if bfac_set:
-        # com += "\n BFACtor SET " + twodec(bfac_set)
-    # if args.weight:
-        # com += "\n weight matrix " + fourdec(args.weight)
-    # # Shannon factor
-    # if args.constant_grid and res_highest:
-        # shannon_factor = 1.5 * res_high / res_highest
-        # com += "\n SHANnon_factor " + fourdec(shannon_factor)
-    # # TLS - TLSC line
-    # if args.tlsin and ncyc_not_zero:
-        # if args.tls_ncyc:
-            # com += "\n refi tlsc " + str(args.tls_ncyc)
-        # else:
-            # com += "\n refi tlsc 10"
     com += "\nrefinement.output.n_resolution_bins=" + str(n_bins)
     com += "\nrefinement.output.prefix=" + prefix
     com += "\nrefinement.input.xray_data.r_free_flags.test_flag_value=" + \
@@ -459,24 +436,6 @@ def refinement_phenix(res_cur,
     with open(params, "w") as pars:
         pars.write(com)
     command.append(params)
-    # Optional TLSIN (and TLSOUT)
-    # if args.tlsin:
-        # if ncyc_not_zero:
-            # command.append("TLSIN")
-            # if args.tlsin_keep:
-                # command.append(args.tlsin)
-            # else:
-                # if mode == "first":
-                    # tlsin = args.tlsin
-                # elif mode == "refine":
-                    # tlsin = args.project + "_R" + str(flag).zfill(2) + "_" + \
-                        # twodecname(res_prev) + "A.tlsout"
-                # command.append(tlsin)
-            # command.append("TLSOUT")
-            # tlsout = prefix + ".tlsout"
-            # command.append(tlsout)
-        # elif mode == "first":  # and ncyc 0
-            # shutil.copy2(args.tlsin, prefix + ".tlsout")
 
     if (mode == "refine" or
             (mode == "first" and args.complete_cross_validation)):
@@ -520,8 +479,6 @@ def refinement_phenix(res_cur,
                 sys.exit(1)
     # Copy log and tls while running phenix.refine at the starting resolution
     if mode == "first":
-        # prefix = args.project + "_" + twodecname(res_cur) + "A_range"
-        #         "_" + twodecname(res_low) + "--" + twodecname(res_high) + "A"
         pdbout = prefix + "_001" + ".pdb"
         prefix_copy = prefix + "_comparison_at_" + twodecname(res_high) + "A"
         shutil.copy2(pdbout, prefix_copy + "_001.pdb")
@@ -746,25 +703,6 @@ def collect_stat_binned_refmac_low(logfilename, mtzfilename, hklin,
             mtzfilename, hklin, flag, res_low_cur, res_high_cur)
         bin_CCwork.append(fourdec(CCwork))
         bin_CCfree.append(fourdec(CCfree))
-
-    # # CC-values
-    # logfile_lines = extract_from_file(
-        # logfilename, "Fom and SigmaA vs resolution", 7, n_bins_low)
-    # try:
-        # for i in range(n_bins_low):
-            # bin_CCwork.append(logfile_lines[i].split()[11])
-            # bin_CCfree.append(logfile_lines[i].split()[10])
-    # except IndexError:
-        # bin_CCwork = []
-        # bin_CCfree = []
-        # for i in range(n_bins_low):
-            # bin_CCwork.append("N/A")
-            # bin_CCfree.append("N/A")
-            # warning_my("low_CC", "All CC-values relating to the resolution"
-                       # " bin " + twodec(bin_res_low[-1]) + "-"
-                       # "" + twodec(bin_res_high[-1]) + " were not calculated "
-                       # "successfully. "
-                       # "For further details, see file " + logfilename + ".")
     return(bin_res_mean, bin_res_low, bin_res_high,
            bin_Nwork, bin_Nfree,
            bin_Rwork, bin_Rfree,
@@ -797,12 +735,6 @@ def collect_stat_binned_refmac_high(
         warning_my("high_R", "R-values of a particular shell "
                    "were not calculated. For "
                    "further details, see file " + logfilename + ".")
-    # bin_CCwork = [extract_from_file(
-    #     logfilename, "Overall correlation coefficient", 0, 1, -1,
-    #     not_found="N/A")]
-    # bin_CCfree = [extract_from_file(
-    #     logfilename, "Free correlation coefficient", 0, 1, -1,
-    #     not_found="N/A")]
     CCwork, CCfree = calculate_correlation(
         mtzfilename, hklin, flag, res_low, res_high)
     bin_CCwork = [fourdec(CCwork)]
@@ -1033,8 +965,7 @@ def collect_stat_OVERALL(shells, args, flag, refinement="refmac"):
 
 
 def collect_stat_overall_refmac(logfilename, flag=0):
-    """Picks and returns overall Rwork, Rfree, CCwork, CCfree, and CCavg values
-    from a given `REFMAC5` logfile.
+    """Picks and returns overall Rwork, Rfree from a given `REFMAC5` logfile.
 
     This function is called by the functions `collect_stat_OVERALL()`
     and `collect_stat_BINNED()`.
@@ -1043,8 +974,8 @@ def collect_stat_overall_refmac(logfilename, flag=0):
         logfilename (str): Filename of a `REFMAC5` logfile
 
     Returns:
-        (tuple): tuple containing statistics values `Rwork`, `Rfree`, \
-                 `CCwork`, `CCfree`, and `CCavg` (all are `str`)
+        (tuple): tuple containing statistics values `Rwork` and `Rfree` \
+                 (both are `str`)
     """
     Rwork = extract_from_file(logfilename, "R factor", 0, 1, -1)
     Rfree = extract_from_file(logfilename, "R free", 0, 1, -1)
@@ -1053,33 +984,35 @@ def collect_stat_overall_refmac(logfilename, flag=0):
         Rfree = "N/A"
         warning_my("overall_R", "Some overall R-values were not calculated. "
                    "For further details, see file " + logfilename + ".")
-    # CCwork = extract_from_file(logfilename, "Overall correlation coefficient",
-    #                            0, 1, -1, not_found="N/A")
-    # CCfree = extract_from_file(logfilename, "Free correlation coefficient",
-    #                            0, 1, -1, not_found="N/A")
-    # CCavg = extract_from_file(logfilename, "Average correlation coefficient",
-    #                           0, 1, -1, not_found="N/A")
-    return Rwork, Rfree  #, fourdec(CCwork), fourdec(CCfree)
+    return Rwork, Rfree
 
 
 def calculate_correlation(hkl_calc, hklin,
                           flag=0, res_low=None, res_high=None):
-    """TO DO: docstring"""
+    """Calculates CCwork and CCfree using `sftools`.
+
+    Args:
+        hkl_calc (str): Name of the MTZ file from a REFMAC5 run
+        hklin (str): Name of the MTZ file with diffraction data
+        flag (int): free reflection flag set
+        res_low (float): low-resolution cutoff
+        res_high (float): high-resolution cutoff
+
+    Returns:
+        (tuple): tuple containing `CCwork` and `CCfree` \
+                 (both are `float` or `str`: "N/A")
+    """
     from iotbx.reflection_file_reader import any_reflection_file
     from scitbx.array_family import flex
-    # print("")  ##
-    # print(hkl_calc, hklin, fourdec(res_low), " - ", fourdec(res_high))  ##
 
     # i_obs from HKLIN
     i_obs = None
     miller_arrays = any_reflection_file(file_name=hklin).as_miller_arrays()
     for i, column in enumerate(miller_arrays):
-        # print(column.info(), column.observation_type(), column.anomalous_flag())  ##
         if column.is_xray_intensity_array() and \
                 column.anomalous_flag() == False:
             i_obs_label = str(column.info()).split(".mtz:")[1].split(",")[0]
             i_obs = column
-            # print("Intensities in " + hklin + " found: ", i_obs.info(), i_obs_label)  ##
             break
     if not i_obs:
         print("Error - intensities were not found in " + hklin)  # TO DO
@@ -1136,8 +1069,6 @@ def calculate_correlation(hkl_calc, hklin,
         CCfree = "N/A"
     if not CCwork:
         CCwork = "N/A"
-    # print("CCwork ", fourdec(CCwork), " CCfree ", fourdec(CCfree),
-    #       " size ", Nwork, Nfree)  ##
     return CCwork, CCfree
 
     

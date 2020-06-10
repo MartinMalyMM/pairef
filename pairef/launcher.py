@@ -107,7 +107,7 @@ def process_arguments(input_args):
         description="Automatic PAIRed REFinement protocol",
         epilog='Dependencies: CCP4 Software Suite or PHENIX containing CCTBX '
         'with Python 2.7',
-        prog='cctbx.python -m pairef',
+        prog='ccp4-python -m pairef',
         add_help=False)
 
     # Arguments
@@ -115,8 +115,9 @@ def process_arguments(input_args):
     # This is a bit dirty hack but  the input files has to be added to `parser`
     # (not to a group) in order to add_argument_with_check() could work
     parser.add_argument(
-        '--GUI', '--gui', dest='gui',
-        help='Start graphical user interface', action='store_true')
+        '--GUI', '--gui', dest='gui', action='store_true',
+        help='Start graphical user interface (usually requires '
+        "to be executed as ccp4-python, not as cctbx.python)")
     ###########################   GUI   ######################################
     if "--GUI" in input_args or "--gui" in input_args:   
         args, args_unknown = parser.parse_known_args(input_args)
@@ -210,6 +211,10 @@ def process_arguments(input_args):
         '--TLSIN-keep', "--tlsin-keep", dest='tlsin_keep',
         help="keep using the same TLS input file in all the refinement runs "
         "(only for REFMAC5)", action='store_true')
+    group2.add_argument(
+        "--open-browser", action="store_true", dest='open_browser',
+        help="open web browser to show results "
+        "(requires to be executed as ccp4-python, not as cctbx.python)")
     group2.add_argument(
         "-h", "--help", action="help", help="show this help message and exit")
 
@@ -398,6 +403,8 @@ def main(args):
         sys.stderr.write("ERROR: This version of pairef module requires "
                          "Python 2.7 from CCTBX.\n"
                          "It has to be executed using command:"
+                         "ccp4-python -m pairef ARGUMENTS\n"
+                         "or\n"
                          "cctbx.python -m pairef ARGUMENTS\n"
                          "Aborting.\n")
         sys.exit(1)
@@ -456,12 +463,12 @@ def main(args):
     writer = output_log(sys.stdout, workdir + '/PAIREF_out.log')
     sys.stdout = writer
 
-    # Show information about the module and input parameters
-    welcome(args)
-
     versions_dict = {"refmac_version": "N/A",  # It will be found later
                      "phenix_version": "N/A",  # It will be found later
-                     "pairef_version": "1.2.0"}
+                     "pairef_version": "1.2.1"}
+
+    # Show information about the module and input parameters
+    welcome(args, versions_dict["pairef_version"])
 
     # Find resolution range of merged data
     res_low, res_high_mtz = res_from_mtz(args.hklin)  # uses CCTBX
@@ -566,12 +573,17 @@ def main(args):
     os.chdir(workdir)
     print("Current working directory: " + os.getcwd())
 
+    write_log_html(shells, [], args, versions_dict, flag_sets)
+    htmlfilepath = os.path.abspath("PAIREF_" + args.project + ".html")
     print("------> RESULTS AND THE CURRENT STATUS OF CALCULATIONS ARE LISTED "
           "IN A HTML LOG FILE "
-          "" + os.path.abspath("PAIREF_" + args.project + ".html"))
+          "" + htmlfilepath)
+    
+    if args.open_browser and "ccp4" in sys.executable:  # cctbx.python fails
+        import webbrowser
+        print("Opening web browser...")
+        webbrowser.open(htmlfilepath)
     print("")
-
-    write_log_html(shells, [], args, versions_dict, flag_sets)
 
     # Modification of the input structure model - Define starting XYZIN
     if args.no_modification:
@@ -702,13 +714,13 @@ def main(args):
                         project=args.project,
                         statistics=["CCwork", "CC*"],
                         n_bins_low=n_bins_low,
-                        title=r"$\it{CC}_{\mathrm{work}}$",
+                        title=r"CC$_\mathrm{work}$",
                         filename_suffix="CCwork", flag=flag)
         matplotlib_line(shells=[shells[0]],
                         project=args.project,
                         statistics=["CCfree", "CC*"],
                         n_bins_low=n_bins_low,
-                        title=r"$\it{CC}_{\mathrm{free}}$",
+                        title=r"CC$_\mathrm{free}$",
                         filename_suffix="CCfree", flag=flag)
         matplotlib_line(shells=[shells[0]],
                         project=args.project,
@@ -886,13 +898,13 @@ def main(args):
                             project=args.project,
                             statistics=["CCwork", "CC*"],
                             n_bins_low=n_bins_low,
-                            title=r"$\it{CC}_{\mathrm{work}}$",
+                            title=r"CC$_\mathrm{work}$",
                             filename_suffix="CCwork", flag=flag)
             matplotlib_line(shells=shells_ready_with_res_init,
                             project=args.project,
                             statistics=["CCfree", "CC*"],
                             n_bins_low=n_bins_low,
-                            title=r"$\it{CC}_{\mathrm{free}}$",
+                            title=r"CC$_\mathrm{free}$",
                             filename_suffix="CCfree", flag=flag)
             matplotlib_line(shells=shells_ready_with_res_init,
                             project=args.project,
@@ -946,13 +958,13 @@ def main(args):
                             project=args.project,
                             statistics=["CCwork", "CC*"],
                             n_bins_low=n_bins_low,
-                            title=r"$\it{CC}_{\mathrm{work}}$",
+                            title=r"CC$_\mathrm{work}$",
                             filename_suffix="CCwork")
             matplotlib_line(shells=shells_ready_with_res_init,
                             project=args.project,
                             statistics=["CCfree", "CC*"],
                             n_bins_low=n_bins_low,
-                            title=r"$\it{CC}_{\mathrm{free}}$",
+                            title=r"CC$_\mathrm{free}$",
                             filename_suffix="CCfree")
         write_log_html(shells, shells, args, versions_dict, flag_sets,
                        ready_merging_statistics=True, done=True)

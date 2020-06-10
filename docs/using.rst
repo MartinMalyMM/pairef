@@ -29,6 +29,11 @@ Then a new folder *pairef_nuclease* is created in the folder where the command h
 
 *PAIREF* will refine the input structure model (default 10 cycles in *REFMAC5*) against data up to 1.9 Å. Then it will calculate statistics relating to the refined model and plot graphs. After that, the refined model will be further refined against data up to 1.8 Å and its relating statistics will be computed. This will be also performed using the remaining high resolution diffraction limits 1.7 Å, 1.6 Å, and 1.5 Å. In the end, merging statisting will be calculated.
 
+Graphical interface
+-------------------
+
+*PAIREF* provides also a graphical inteface - see page :ref:`gui-label`.
+
 Detailed specification of refinement parameters
 -----------------------------------------------
 
@@ -117,25 +122,27 @@ Summary of program options
 
 .. code ::
 
-   $ cctbx.python -m pairef -h
-   usage: cctbx.python -m pairef [--GUI] --XYZIN XYZIN --HKLIN HKLIN
-                                 [-u HKLIN_UNMERGED] [--LIBIN LIBIN]
-                                 [--TLSIN TLSIN] [-c COMIN] [-d DEFIN] [-R | -P]
-                                 [-p PROJECT] [-r RES_SHELLS] [-n N_SHELLS]
-                                 [-s STEP] [-i RES_INIT] [-f FLAG] [-w WEIGHT]
-                                 [--ncyc NCYC] [--constant-grid] [--complete]
-                                 [--TLS-ncyc TLS_NCYC] [--TLSIN-keep] [-h]
-                                 [--prerefinement-ncyc PREREFINEMENT_NCYC]
-                                 [--prerefinement-reset-bfactor]
-                                 [--prerefinement-add-to-bfactor ADD_TO_BFACTOR]
-                                 [--prerefinement-set-bfactor SET_BFACTOR]
-                                 [--prerefinement-shake-sites [SHAKE_SITES]]
-                                 [--prerefinement-no-modification]
+   $ ccp4-python -m pairef -h
+   usage: ccp4-python -m pairef [--GUI] --XYZIN XYZIN --HKLIN HKLIN
+                                [-u HKLIN_UNMERGED] [--LIBIN LIBIN]
+                                [--TLSIN TLSIN] [-c COMIN] [-d DEFIN] [-R | -P]
+                                [-p PROJECT] [-r RES_SHELLS] [-n N_SHELLS]
+                                [-s STEP] [-i RES_INIT] [-f FLAG] [-w WEIGHT]
+                                [--ncyc NCYC] [--constant-grid] [--complete]
+                                [--TLS-ncyc TLS_NCYC] [--TLSIN-keep]
+                                [--open-browser] [-h]
+                                [--prerefinement-ncyc PREREFINEMENT_NCYC]
+                                [--prerefinement-reset-bfactor]
+                                [--prerefinement-add-to-bfactor ADD_TO_BFACTOR]
+                                [--prerefinement-set-bfactor SET_BFACTOR]
+                                [--prerefinement-shake-sites [SHAKE_SITES]]
+                                [--prerefinement-no-modification]
    
    Automatic PAIRed REFinement protocol
    
    optional arguments specifying input files:
-     --GUI, --gui          Start graphical user interface
+     --GUI, --gui          Start graphical user interface (usually requires to be
+                           executed as ccp4-python, not as cctbx.python)
      --XYZIN XYZIN, --xyzin XYZIN
                            PDB or mmCIF file with current structure model
      --HKLIN HKLIN, --hklin HKLIN
@@ -185,6 +192,8 @@ Summary of program options
                            default, only for REFMAC5)
      --TLSIN-keep          keep using the same TLS input file in all the
                            refinement runs (only for REFMAC5)
+     --open-browser        open web browser to show results (requires to be
+                           executed as ccp4-python, not as cctbx.python)
      -h, --help            show this help message and exit
    
    optional arguments specifying structure model modification:

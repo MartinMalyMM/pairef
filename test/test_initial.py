@@ -138,9 +138,8 @@ automatic PAIRed REFinement protocol
 """
 # run date and time: ...
     expected_stdout_2 = """
-Please reference: "Paired refinement under control of PAIREF"
-M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko, (2020)
-(to be published)
+Please reference: "Paired refinement under the control of PAIREF"
+M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko (2020) IUCrJ 7
 
 Command line arguments: """ + arguments + """
 

@@ -5,3 +5,4 @@ include test/*
 include test/fixtures/*
 include docs/*
 include docs/_static/*
+exclude .gitignore

@@ -108,3 +108,5 @@ useful_commands.sh
 .mypy_cache/
 __bordel__/
 *pairef_project*/
+docs_rsync.sh
+

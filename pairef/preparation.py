@@ -40,13 +40,14 @@ def which(program):
     return None
 
 
-def welcome(args):
+def welcome(args, pairef_version):
     '''Print introduction information about the module and
     input parameters.
 
     Args:
         args (parser): Input arguments (including e. g. name of the project) \
                        parsed by `argparse` via function process_arguments()
+        pairef_version (str)
 
     Returns:
         bool: True
@@ -61,13 +62,12 @@ def welcome(args):
 /   / / _(_ / \ (__ (
 """)
     print("automatic PAIRed REFinement protocol")
-    print("version: 1.2.0")
+    print("version: " + pairef_version)
     print("run date and time: " + date_time)
     print("user@host: " + getpass.getuser() + "@" + socket.gethostname())
     print("")
-    print('Please reference: "Paired refinement under control of PAIREF"')
-    print("M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko, (2020)")
-    print("(to be published)")
+    print('Please reference: "Paired refinement under the control of PAIREF"')
+    print("M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko (2020) IUCrJ 7")
     print("")
     print("Command line arguments: " + " ".join(sys.argv[1:]))
     print("")

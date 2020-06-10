@@ -6,7 +6,7 @@ with open('README.rst') as f:
 
 setup(
     name='pairef',
-    version='1.2.0',
+    version='1.2.1',
     description='Automatic PAIRed REFinement protocol',
     long_description=long_description,
     author='Martin Maly',
