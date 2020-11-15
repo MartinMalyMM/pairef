@@ -447,7 +447,6 @@ def refinement_phenix(res_cur,
         p = subprocess.Popen(command, stdout=out, stderr=out)
         #                    encoding='utf8')  # Probably required in Python 3
         p.communicate()
-    print("xyzout", xyzout)
     for fileout in [logout, hklout, xyzout, outout]:
         if not os.path.isfile(fileout):
             error = True

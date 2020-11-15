@@ -1,4 +1,5 @@
 from setuptools import setup, find_packages
+from pairef import __version__
 
 with open('README.rst') as f:
     long_description = ''.join(f.readlines())
@@ -6,7 +7,7 @@ with open('README.rst') as f:
 
 setup(
     name='pairef',
-    version='1.2.1',
+    version=__version__,
     description='Automatic PAIRed REFinement protocol',
     long_description=long_description,
     author='Martin Maly',

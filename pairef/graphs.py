@@ -443,19 +443,25 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
                     j = j + 1
             elif refinement == "phenix":
                 xticklabels_rotation = 90
-                pdbfilename = prefix + "_001.pdb"
-                with open(pdbfilename, "r") as pdbfile:
-                    lines = pdbfile.readlines()
+                logfilename = prefix + "_001.log"
+                with open(logfilename, "r") as logfile:
+                    lines = logfile.readlines()
                 for i in range(len(lines)):
-                    if "REMARK  stage r-work r-free bonds angles " \
+                    if " stage r-work r-free bonds angles " \
                             "b_min b_max b_ave n_water shift" \
                             in lines[i]:
                         j = i + 1
+                if "j" not in vars():
+                    sys.stderr.write("ERROR: File " + str(logfilename) + " is "
+                                     "not in a proper format. "
+                                     "Statistics could not be found.\n"
+                                     "Aborting.\n")
+                    sys.exit(1)
                 while lines[j].split()[-1][-1] != '-':  # until hline ---------
                     values_list.append(float(
                         lines[j][values_range[0]:values_range[1]]))
                     if not len(xticklabels_list) == len(xshell_list):
-                        xticklabel = lines[j][7:18]
+                        xticklabel = lines[j][0:11]
                         xticklabel.strip()
                         xticklabels_list.append(xticklabel)
                     j = j + 1

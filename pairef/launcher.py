@@ -101,6 +101,7 @@ def process_arguments(input_args):
     Returns:
         list: Processed arguments
     '''
+    from . import __version__
     # Input processing
     # parser = argparse.ArgumentParser(
     parser = MyArgumentParser(
@@ -217,6 +218,9 @@ def process_arguments(input_args):
         "(requires to be executed as ccp4-python, not as cctbx.python)")
     group2.add_argument(
         "-h", "--help", action="help", help="show this help message and exit")
+    group2.add_argument(
+        '-v', '--version', action='version', version=__version__,
+         help="show version and exit")
 
     group3 = parser.add_argument_group(
         'optional arguments specifying structure model modification')
@@ -397,6 +401,7 @@ def main(args):
     #     sys.stderr.write("ERROR: This version of pairef module requires "
     #                      "Python 2.7 from CCTBX.\n")
     #     sys.exit(1)
+    from . import __version__
     try:
         import cctbx.miller
     except ImportError:
@@ -465,7 +470,7 @@ def main(args):
 
     versions_dict = {"refmac_version": "N/A",  # It will be found later
                      "phenix_version": "N/A",  # It will be found later
-                     "pairef_version": "1.2.1"}
+                     "pairef_version": __version__}
 
     # Show information about the module and input parameters
     welcome(args, versions_dict["pairef_version"])
