@@ -444,7 +444,8 @@ def refinement_phenix(res_cur,
         print("       Running command:")
         print("       " + " ".join(command))
     with open(outout, 'w') as out:
-        p = subprocess.Popen(command, stdout=out, stderr=out)
+        p = subprocess.Popen(command, stdout=out, stderr=out,
+                             shell=settings["sh"])
         #                    encoding='utf8')  # Probably required in Python 3
         p.communicate()
     for fileout in [logout, hklout, xyzout, outout]:
@@ -1025,7 +1026,8 @@ def calculate_correlation(hkl_calc, hklin,
     else:
         com_resolution = ""
     p = subprocess.Popen(["sftools"], stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                         shell=settings["sh"])
     com = "read " + hkl_calc + " col 1 FC_ALL\n" \
         "calc col FC_ALLsq = col FC_ALL col FC_ALL *\n" \
         "read " + hklin + " col " + i_obs_label + "\n" \

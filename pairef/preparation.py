@@ -30,11 +30,14 @@ def which(program):
 
     fpath, fname = os.path.split(program)
     if fpath:
-        if is_exe(program):
+        if is_exe(program) or is_exe(program + ".exe"):
             return program
     else:
         for path in os.environ["PATH"].split(os.pathsep):
             exe_file = os.path.join(path, program)
+            if is_exe(exe_file):
+                return exe_file
+            exe_file = os.path.join(path, program + ".exe")
             if is_exe(exe_file):
                 return exe_file
     return None
@@ -223,7 +226,8 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
         tool = "mtzdump"
         p = subprocess.Popen(["mtzdump", "HKLIN", args.hklin],
                              stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                             shell=settings["sh"])
         com = "STATS NBIN 1 RESO " + twodec(res_low) + " " \
             "" + twodec(args.res_init) + "\n end\n"
         output, err = p.communicate(com)
@@ -306,7 +310,7 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
         while n_i_obs_thinner_shell < 2000:
             n_bins_low = n_bins_low - 1
             n_i_obs_thinner_shell = \
-                sqrt(2) * n_i_obs_low / pow(n_bins_low, 3 / 2)
+                sqrt(2) * n_i_obs_low / pow(n_bins_low, 1.5)
     # Now `n_bins_low` is ready
 
     if args.res_shells:
@@ -658,7 +662,7 @@ def res_opt(shell, args, refinement="refmac"):
     logfilename = prefix + "_sfcheck.out"
     with open(logfilename, "w") as logfile:
         p = subprocess.Popen(
-            command, stdout=logfile, stderr=logfile)
+            command, stdout=logfile, stderr=logfile, shell=settings["sh"])
         out, err = p.communicate()
 
     res_opt = 0
@@ -833,7 +837,7 @@ def run_baverage(project, xyzin, res_init):
     com = "end\n"
     with open(logout, "w") as logfile:
         p = subprocess.Popen(command, stdin=subprocess.PIPE,
-                             stdout=logfile)
+                             stdout=logfile, shell=settings["sh"])
         #               encoding='utf8')  # Probably required in Python 3
         p.communicate(com)
 

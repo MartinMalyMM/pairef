@@ -27,8 +27,6 @@ class MyArgumentParser(argparse.ArgumentParser):
     given in argument exist but not open it.
     Inspired by `https://codereview.stackexchange.com/questions/28608/
     checking-if-cli-arguments-are-valid-files-directories-in-python`
-
-    Moreover, help message is displayed in the case of parser.error().
     """
     def __is_valid_file(self, parser, arg):
         """Checks if file
@@ -62,7 +60,7 @@ class MyArgumentParser(argparse.ArgumentParser):
 
     def error(self, message):
         sys.stderr.write('error: %s\n' % message)
-        self.print_help()
+        print('Run `ccp4-python -m pairef -h` to show the help message.')
         sys.exit(2)
 
 
@@ -425,9 +423,12 @@ def main(args):
         refinement_name = "REFMAC5"
         from .refinement import refinement_refmac
         from .refinement import collect_stat_binned_refmac_low
+    settings["sh"] = False
+    if args.phenix and platform.system() == 'Windows':
+        settings["sh"] = True
 
-    # Check of the needed executables - works only on Linux
-    if platform.system() == 'Linux':
+    # Check of the needed executables - works only on Linux or Windows
+    if platform.system() == 'Linux' or platform.system() == 'Windows':
         if refinement == "refmac":  # CCP4 & REFMAC5
             cryst_package = "CCP4 Software Suite"
             required_executables = ["refmac5", "baverage", "mtzdump", "sfcheck"]
@@ -697,12 +698,12 @@ def main(args):
                                    n_bins_low, flag, res_low, refinement)
         if which("sfcheck"):
             res_opt(shells[0], args, refinement)
-        matplotlib_line(shells=[shells[0]],
-                        project=args.project,
-                        statistics=["res_opt"],
-                        n_bins_low=n_bins_low,
-                        title="Optical resolution",
-                        filename_suffix="Optical_resolution", flag=flag)
+            matplotlib_line(shells=[shells[0]],
+                            project=args.project,
+                            statistics=["res_opt"],
+                            n_bins_low=n_bins_low,
+                            title="Optical resolution",
+                            filename_suffix="Optical_resolution", flag=flag)
         matplotlib_line(shells=[shells[0]],
                         project=args.project,
                         statistics=["Rwork"],
@@ -880,13 +881,14 @@ def main(args):
             matplotlib_bar(args=args, flag_sets=flag_sets,
                            ready_shells=shells_ready_with_res_init)
         else:
-            matplotlib_line(shells=shells_ready_with_res_init,
-                            project=args.project,
-                            statistics=["res_opt"],
-                            n_bins_low=n_bins_low,
-                            title="Optical resolution",
-                            filename_suffix="Optical_resolution",
-                            flag=flag)
+            if which("sfcheck"):
+                matplotlib_line(shells=shells_ready_with_res_init,
+                                project=args.project,
+                                statistics=["res_opt"],
+                                n_bins_low=n_bins_low,
+                                title="Optical resolution",
+                                filename_suffix="Optical_resolution",
+                                flag=flag)
             matplotlib_line(shells=shells_ready_with_res_init,
                             project=args.project,
                             statistics=["Rwork"],

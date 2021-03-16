@@ -639,7 +639,7 @@ QLineEdit#required {
         # Run
         argms = ["-m", "pairef"] + argms
         process = QProcess()
-        print(argms)
+        # print(argms)
         self.re, self.pid = process.startDetached(sys.executable, argms, ".")
         # except SystemExit:
         #     print("ignoring SystemExit")

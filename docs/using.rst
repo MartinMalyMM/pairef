@@ -6,7 +6,7 @@ Using *PAIREF*
 Getting started
 ---------------
 
-Open terminal (GNU/Linux, macOS) or CCP4 console (Windows) and `go to <https://en.wikipedia.org/wiki/Cd_(command)>`_ the folder where your structure model and diffraction data are saved. For example, let's assume that your structure model *nuclease_model.pdb* has been refined using data file *data_2A.mtz* at 2 Å resolution and all the files are located in a folder :code:`/home/test/project/nuclease/dataset7/files/`. To change the current working directory, run a command:
+Open the terminal (GNU/Linux, macOS) or CCP4 console (Windows) or Phenix Command Prompt (Windows) and `go to <https://en.wikipedia.org/wiki/Cd_(command)>`_ the folder where your structure model and diffraction data are saved. For example, let's assume that your structure model *nuclease_model.pdb* has been refined using data file *data_2A.mtz* at 2 Å resolution and all the files are located in a folder :code:`/home/test/project/nuclease/dataset7/files/`. To change the current working directory, run a command:
 
 .. code ::
 

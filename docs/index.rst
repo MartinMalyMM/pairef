@@ -32,11 +32,11 @@ Please reference: M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko: `Paired refin
 Getting started
 ===============
 
-*PAIREF* depends on the `CCP4 Software Suite <http://www.ccp4.ac.uk/>`_ or `PHENIX <https://www.phenix-online.org/documentation/reference/refinement.html>`_. Both contain the `Computational Crystallography Toolbox <https://cci.lbl.gov/cctbx_docs/index.html>`_ with Python 2.7 and `pip <https://pip.pypa.io/en/stable/>`_).
+*PAIREF* depends on the `CCP4 Software Suite <http://www.ccp4.ac.uk/>`_ or `PHENIX <https://www.phenix-online.org>`_. Both contain the `Computational Crystallography Toolbox <https://cci.lbl.gov/cctbx_docs/index.html>`_ with Python 2.7.
 
-*PAIREF* can be easily installed running command :code:`cctbx.python -m pip install pairef --user --no-deps` in terminal (GNU/Linux, macOS) or CCP4Console (Windows). Full instructions are described on page :ref:`installation-label`. 
+*PAIREF* can be easily installed running command :code:`cctbx.python -m pip install pairef --user --no-deps` in the terminal (GNU/Linux, macOS) or CCP4Console (Windows) or Phenix Command Prompt (Windows). Full instructions are described on the page :ref:`installation-label`. 
 
-How to use the *PAIREF* is described on page :ref:`using-label`. To run paired refinement of a model (previously refined at 1.81 Å) for a series of cutoffs (1.7, 1.6, and 1.5 Å), execute a following command:
+How to use the *PAIREF* is described on the page :ref:`using-label`. To run paired refinement of a model (previously refined at 1.81 Å) for a series of cutoffs (1.7, 1.6, and 1.5 Å), execute a following command:
 
 .. code ::
 

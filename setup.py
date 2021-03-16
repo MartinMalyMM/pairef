@@ -42,6 +42,6 @@ setup(
     package_data={'pairef': ['static/*.css']},
     data_files=[('bitmaps', ['pairef/static/pairef_logo_64.png'])],
     include_package_data=True,
-    setup_requires=['pytest-runner'],
-    tests_require=['pytest'],
+    # setup_requires=['pytest-runner'],
+    # tests_require=['pytest'],
 )
