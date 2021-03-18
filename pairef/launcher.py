@@ -436,7 +436,10 @@ def main(args):
             ##     required_executables.append("findwaters")
         elif refinement == "phenix":
             cryst_package = "PHENIX software suite"
-            required_executables = ["phenix.refine"]
+            if platform.system() == 'Linux':
+                required_executables = ["phenix.refine"]
+            else:
+                required_executables = []  # just skip the check
             # modules: from xia2.Wrappers.CCP4.Mtzdump import Mtzdump
             #          iotbx
         for required_executable in required_executables:
