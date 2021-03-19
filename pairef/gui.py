@@ -421,7 +421,7 @@ QLineEdit#required {
     def setworkdir(self):
         try:
             if os.path.isdir(self.workdirName.text()):
-                os.chdir(self.workdirName.text())
+                os.chdir(str(self.workdirName.text()))
                 self.workdirName.setStyleSheet("background-color: lightgreen;")
             else:
                 self.workdirName.setStyleSheet("background-color: red;")
