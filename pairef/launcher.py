@@ -487,7 +487,7 @@ def main(args):
                          "\nAborting.\n")
     if not res_low:
         warning_my("low_res", "Low resolution limit could not be found."
-                   "Setting it to a value " + RES_LOW + " A.")
+                   "Setting it to a value " + str(RES_LOW) + " A.")
         res_low = RES_LOW
     elif res_low > 999:
         warning_my("low_res", "Founded low resolution limit is too large "
