@@ -302,6 +302,8 @@ QLineEdit#required {
         self.prerefinement_addCheckBox = QCheckBox(
             "Add value to B-factors", objectName="indent")
         self.prerefinement_addCheckBox.setToolTip(prerefinement_addToolTip)
+        self.prerefinement_addCheckBox.stateChanged.connect(
+            self.prerefinement_setUncheck)
         self.prerefinement_add = QLineEdit("0")
         self.prerefinement_add.setValidator(doubleValidator)
         self.prerefinement_add.setToolTip(prerefinement_addToolTip)
@@ -522,11 +524,15 @@ QLineEdit#required {
     def complete_show_hide(self):
         if self.completeCheckBox.isChecked():
             self.prerefinementCheckBox.setChecked(True)
-            self.prerefinement_show_hide  # Show
+            self.prerefinement_show_hide  # show
             self.prerefinementCheckBox.setEnabled(False)
+            self.free.setEnabled(False)
+            self.freeLabel.setEnabled(False)
         else: 
-            # not hide
+            # not hide self.prerefinement_show_hide
             self.prerefinementCheckBox.setEnabled(True)
+            self.free.setEnabled(True)
+            self.freeLabel.setEnabled(True)
                 
     def prerefinement_show_hide(self):
         prerefinement_widgets = [
@@ -545,12 +551,14 @@ QLineEdit#required {
                 prerefinement_widget.hide()
 
     def prerefinement_setUncheck(self):
-        if self.prerefinement_resetCheckBox.isChecked():
+        if self.prerefinement_resetCheckBox.isChecked() or \
+                self.prerefinement_addCheckBox.isChecked():
             self.prerefinement_setCheckBox.setChecked(False)
 
     def prerefinement_resetUncheck(self):
         if self.prerefinement_setCheckBox.isChecked():
             self.prerefinement_resetCheckBox.setChecked(False)
+            self.prerefinement_addCheckBox.setChecked(False)
 
     def run(self):
         # Check validity of required arguments and working directory
@@ -595,7 +603,7 @@ QLineEdit#required {
             argms += ["-p", str(self.projectName.text())]
         if self.ncyc.value():
             argms += ["--ncyc", str(self.ncyc.value())]
-        if self.free.text():
+        if self.free.text() and not self.completeCheckBox.isChecked():
             argms += ["--flag", str(self.free.text())]
         if not self.weightCheckBox.isChecked() and self.refmacRadio.isChecked():
             # e.i. not auto weight
@@ -638,9 +646,17 @@ QLineEdit#required {
         # subprocess.call([sys.executable, "-m", "pairef"] + argms)
         # Run
         argms = ["-m", "pairef"] + argms
+        if "win" in platform.system().lower() or "mac" in platform.system().lower():
+            ccp4_command = sys.executable
+        else:
+            from .preparation import which
+            if which("ccp4-python"):
+                ccp4_command = "ccp4-python"
+            else:
+                ccp4_command = sys.executable
         process = QProcess()
-        # print(argms)
-        self.re, self.pid = process.startDetached(sys.executable, argms, ".")
+        print("pairef-gui: executing command:\n", ccp4_command, argms)
+        self.re, self.pid = process.startDetached(ccp4_command, argms, ".")
         # except SystemExit:
         #     print("ignoring SystemExit")
         # Show/hide/enable buttons

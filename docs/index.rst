@@ -13,7 +13,6 @@
    installation
    using
    gui
-   troubleshooting
    list_of_functions
    test
    credits

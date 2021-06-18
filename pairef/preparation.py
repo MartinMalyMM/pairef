@@ -69,7 +69,7 @@ def welcome(args, pairef_version):
     print("run date and time: " + date_time)
     print("user@host: " + getpass.getuser() + "@" + socket.gethostname())
     print("")
-    print('Please reference: "Paired refinement under the control of PAIREF"')
+    print('Please cite: "Paired refinement under the control of PAIREF"')
     print("M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko (2020) IUCrJ 7")
     print("")
     print("Command line arguments: " + " ".join(sys.argv[1:]))
@@ -756,7 +756,7 @@ def calculate_merging_stats(hklin_unmerged, shells, project, bins_low,
     with open(csvfilename, "w") as csvfile:
         csvfile.writelines("#shell d_max  d_min   #obs  #uniq   mult.  %comp"
                            "       <I>  <I/sI>    r_mrg   r_meas    r_pim   "
-                           "cc1/2   cc_ano     cc* \n")
+                           "r_anom   cc1/2   cc_ano     cc* \n")
 
     ## Collect statistics, calculate CC*-values and save them to CSV file
 
@@ -774,7 +774,7 @@ def calculate_merging_stats(hklin_unmerged, shells, project, bins_low,
         """
         for i in range(len(lines)):
             # Compute CC*
-            bin_CChalf = lines[i].split()[11]
+            bin_CChalf = lines[i].split()[-2]
             if bin_CChalf < 0:
                 bin_CCstar = "N/A"
                 warning_my("CC*", "A CC*-value for a particular shell "
@@ -877,6 +877,27 @@ def run_baverage(project, xyzin, res_init):
     return baverage
 
 
+def run_bmean_iotbx(project, xyzin):
+    """Finds average value of B-factors of all the atoms in the structure
+    model `xyzin` using `pdb` from `iotbx`.
+    Then returns mean B-factor for all the atoms of the structure model to
+    the obtained value.
+
+    Args:
+        project (str): Name of the project
+        xyzin (str): Filename of structure model in PDB or mmCIF format
+
+    Returns:
+        float: Mean B-factor for all the atoms
+    """
+    from iotbx import pdb
+    pdb_inp = pdb.input(file_name=xyzin)
+    atoms = pdb_inp.atoms()
+    bfactors = atoms.extract_b()
+    baverage = float(bfactors.format_mean("%5.2f"))
+    return baverage
+
+
 def run_pdbtools(args, baverage=0):
     """Modify the input structure model `args.xyzin` by `mmtbx.pdbtools`.
     The procces is controlled by `args.reset_bfactor`, `args.add_to_bfactor`,
@@ -898,35 +919,92 @@ def run_pdbtools(args, baverage=0):
         # Nothing to do
         return args.xyzin
 
-    import mmtbx.command_line.pdbtools
-    pdbtools_args = []
-    if args.reset_bfactor and baverage:
-        bfactor = baverage
-        if args.add_to_bfactor:
-            bfactor += args.add_to_bfactor
-            print("B-factor after application of the parameter "
-                  "--prerefinement-add-to-bfactor: " + twodec(bfactor))
-        pdbtools_args.append("set_b_iso=" + twodec(bfactor))
-    elif args.set_bfactor:
-        pdbtools_args.append("set_b_iso=" + twodec(args.set_bfactor))
-    if args.add_to_bfactor and not args.reset_bfactor:
-        pdbtools_args.append("shift_b_iso=" + twodec(args.add_to_bfactor))
-    if args.shake_sites:
-        pdbtools_args.append("shake=" + twodec(args.shake_sites))
-
+    prefix_phil = args.project + "_" + twodecname(args.res_init) + "A"
     prefix = args.project + "_" + twodecname(args.res_init) + "A_modified"
     logout = prefix + ".log"
     if "cif" in settings["pdbORmmcif"]:
         xyzout = prefix + ".cif"
     else:
         xyzout = prefix + ".pdb"
-    pdbtools_args.append("model_file_name=" + args.xyzin)
-    pdbtools_args.append("file_name=" + xyzout)
-    print("Modification of the input structure model - pdbtools arguments: " + 
-        " ".join(pdbtools_args))
-    with open(logout, "w") as logfile:
-        mmtbx.command_line.pdbtools.run(pdbtools_args, out=logfile,
-                                        replace_stderr=False)
+
+    phil_import_successful = None
+    try:  # new versions of CCP4 or PHENIX
+        from libtbx import phil
+        from mmtbx.programs import pdbtools
+        from iotbx.data_manager import DataManager
+        phil_import_successful = True
+    except ImportError:
+        pass
+    if phil_import_successful:
+        dm = DataManager()
+        dm.set_overwrite(True)
+        model = dm.get_model(args.xyzin)
+        phil_master = phil.parse(pdbtools.Program.master_phil_str,
+                                 process_includes=True)
+        obj_work = phil_master.extract()
+        adp_obj = phil_master.extract().modify.adp[0]
+        # prepare arguments
+        if args.reset_bfactor and baverage:
+            bfactor = baverage
+            if args.add_to_bfactor:
+                bfactor += float(args.add_to_bfactor)
+                print("B-factor after application of the parameter "
+                      "--prerefinement-add-to-bfactor: " + twodec(bfactor))
+            adp_obj.set_b_iso = float(bfactor)
+            # pdbtools_args.append("set_b_iso=" + twodec(bfactor))
+        elif args.set_bfactor:
+            adp_obj.set_b_iso = float(args.set_bfactor)
+            # pdbtools_args.append("set_b_iso=" + twodec(args.set_bfactor))
+        if args.add_to_bfactor and not args.reset_bfactor:
+            adp_obj.shift_b_iso = float(args.add_to_bfactor)
+            # pdbtools_args.append("shift_b_iso=" + twodec(args.add_to_bfactor))
+        if adp_obj.set_b_iso or adp_obj.shift_b_iso:
+            obj_work.modify.adp.append(adp_obj)
+        if args.shake_sites:
+            sites_obj = phil_master.extract().modify.sites[0]
+            sites_obj.shake = float(args.shake_sites)
+            obj_work.modify.sites.append(sites_obj)
+            # pdbtools_args.append("shake=" + twodec(args.shake_sites))
+        obj_work.output.prefix = prefix_phil
+        obj_work.output.suffix = "_modified"
+        return_phil = phil_master.format(obj_work)
+        print("Modification of the input structure model using pdbtools...")
+        Pdbtools = pdbtools.Program(data_manager=dm, params=obj_work)
+        Pdbtools.run()
+        return xyzout
+
+    else:  #   old versions of CCP4 or PHENIX (no phil)
+        pdbtools_args = []
+        if args.reset_bfactor and baverage:
+            bfactor = baverage
+            if args.add_to_bfactor:
+                bfactor += args.add_to_bfactor
+                print("B-factor after application of the parameter "
+                      "--prerefinement-add-to-bfactor: " + twodec(bfactor))
+            pdbtools_args.append("set_b_iso=" + twodec(bfactor))
+        elif args.set_bfactor:
+            pdbtools_args.append("set_b_iso=" + twodec(args.set_bfactor))
+        if args.add_to_bfactor and not args.reset_bfactor:
+            pdbtools_args.append("shift_b_iso=" + twodec(args.add_to_bfactor))
+        if args.shake_sites:
+            pdbtools_args.append("shake=" + twodec(args.shake_sites))
+
+        pdbtools_args.append("file_name=" + xyzout)
+        print("Modification of the input structure model - pdbtools arguments: " + 
+            " ".join(pdbtools_args))
+        if which("phenix.pdbtools"):
+            with open(logout, "w") as logfile:
+                p = subprocess.Popen(["phenix.pdbtools", args.xyzin] + pdbtools_args,
+                                     stdout=logfile, shell=settings["sh"])
+                #               encoding='utf8')  # Probably required in Python 3
+                p.communicate()
+        else:
+            import mmtbx.command_line.pdbtools
+            pdbtools_args.append("model_file_name=" + args.xyzin)
+            with open(logout, "w") as logfile:
+                mmtbx.command_line.pdbtools.run(pdbtools_args, out=logfile,
+                                                replace_stderr=False)
+    
     if os.path.isfile(xyzout):
         if "cif" in settings["pdbORmmcif"]:
             # refmac required .mmcif (.cif does not work)

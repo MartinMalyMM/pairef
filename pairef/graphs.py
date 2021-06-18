@@ -255,6 +255,7 @@ def matplotlib_bar(args, values="R-values", flag_sets=[], ready_shells=[]):
         # https://github.com/matplotlib/matplotlib/issues/5209
         warnings.simplefilter(action='ignore', category=FutureWarning)
         plt.savefig(pngfilename, bbox_inches="tight", dpi=96)
+        # plt.savefig(pngfilename + ".eps", bbox_inches="tight", format="eps")
     plt.clf()
     plt.close('all')
     return pngfilename
@@ -500,7 +501,7 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
         for i, statistic in enumerate(statistics):
             if statistic == "CC*" and os.path.isfile(csvfilename):
                 values_label = r'CC$^*$'
-                values_column = 14
+                values_column = -1
                 marker = "*"
                 color = "g"
                 linestyle = '--'
@@ -545,7 +546,7 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
                     values_column = 11
                 elif statistic == "CChalf" and os.path.isfile(csvfilename):
                     values_label = r'CC$_\mathrm{1/2}$'
-                    values_column = 12
+                    values_column = -2
                 else:
                     break
             values_list = []
@@ -583,6 +584,7 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
     plt.setp(ax.get_xticklabels(), horizontalalignment='center',
              rotation=xticklabels_rotation)
     plt.savefig(pngfilename, bbox_inches="tight", dpi=dpi)
+    # plt.savefig(pngfilename + ".eps", bbox_inches="tight", format="eps")
     plt.clf()
     plt.close('all')
     return pngfilename
@@ -931,7 +933,7 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
             page += '\t\t</div>\n'
     page += """
 \t<h2>References</h2>
-\t\tPlease reference the used software:
+\t\tPlease cite the used software:
 \t\t<ul>
 \t\t<li>Paired refinement under the control of <i>PAIREF</i>. M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko (2020) <i>IUCrJ</i> <b>7</b></li>
 """

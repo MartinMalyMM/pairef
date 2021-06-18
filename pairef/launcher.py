@@ -8,7 +8,7 @@ import shutil
 from .settings import warning_dict, settings
 from .preparation import welcome, create_workdir, output_log, def_res_shells
 from .preparation import which, res_high_from_xyzin, res_from_mtz, res_opt
-from .preparation import calculate_merging_stats, run_baverage, run_pdbtools
+from .preparation import calculate_merging_stats, run_pdbtools
 from .preparation import res_from_hklin_unmerged, check_refinement_software
 from .commons import twodec, twodecname, warning_my, try_symlink
 from .refinement import collect_stat_OVERALL
@@ -482,9 +482,10 @@ def main(args):
     # Find resolution range of merged data
     res_low, res_high_mtz = res_from_mtz(args.hklin)  # uses CCTBX
     if not res_high_mtz:
-        sys.stderr.write("ERROR: High resolution limit of data "
+        sys.stderr.write("ERROR: High-resolution limit of data "
                          "" + args.hklin + " could not be found."
                          "\nAborting.\n")
+        sys.exit(1)
     if not res_low:
         warning_my("low_res", "Low resolution limit could not be found."
                    "Setting it to a value " + str(RES_LOW) + " A.")
@@ -599,7 +600,12 @@ def main(args):
         xyzin_start = args.xyzin
     else:
         if args.complete_cross_validation or args.reset_bfactor:
-            baverage = run_baverage(args.project, args.xyzin, args.res_init)
+            if not which("baverage"):  # typically PHENIX without CCP4 paths
+                from .preparation import run_bmean_iotbx
+                baverage = run_bmean_iotbx(args.project, args.xyzin)
+            else:  # typically refmac
+                from .preparation import run_baverage
+                baverage = run_baverage(args.project, args.xyzin, args.res_init)
             xyzin_start = run_pdbtools(args, baverage)
         else:
             xyzin_start = run_pdbtools(args)
