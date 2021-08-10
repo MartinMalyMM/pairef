@@ -546,7 +546,7 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
                     values_column = 11
                 elif statistic == "CChalf" and os.path.isfile(csvfilename):
                     values_label = r'CC$_\mathrm{1/2}$'
-                    values_column = -2
+                    values_column = -3
                 else:
                     break
             values_list = []
@@ -938,22 +938,22 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
 \t\t<li>Paired refinement under the control of <i>PAIREF</i>. M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko (2020) <i>IUCrJ</i> <b>7</b></li>
 """
     if not args.phenix or "ccp4" in sys.executable.lower():
-        page += "\t\t<li>Overview of the <i>CCP</i>4 suite and current developments. Collaborative Computational Project, Number 4 (2011) <i>Acta Cryst.</i> D<b>67</b>:235–242</li>\n"
+        page += "\t\t<li>Overview of the <i>CCP</i>4 suite and current developments. Collaborative Computational Project, Number 4 (2011) <i>Acta Cryst.</i> D<b>67</b>:235-242</li>\n"
     if args.phenix:
         page += "\t\t<li>Macromolecular structure determination using X-rays, neutrons and electrons: recent developments in <i>Phenix</i>. D. Liebschner, P.V. Afonine, M.L. Baker, G. Bunkóczi, V.B. Chen, T.I. Croll, B. Hintze, L.W. Hung, S. Jain, A.J. McCoy, N.W. Moriarty, R.D. Oeffner, B.K. Poon, M.G. Prisant, R.J. Read, J.S. Richardson, D.C. Richardson, M.D. Sammito, O.V. Sobolev, D.H. Stockwell, T.C. Terwilliger, A.G. Urzhumtsev, L.L. Videau, C.J. Williams, P.D. Adams (2019) <i>Acta Cryst.</i> D<b>75</b>:861-877</li>\n"
         page += "\t\t<li>Towards automated crystallographic structure refinement with <i>phenix.refine</i>. P.V. Afonine, R.W. Grosse-Kunstleve, N. Echols, J.J. Headd, N.W. Moriarty, M. Mustyakimov, T.C. Terwilliger, A. Urzhumtsev, P.H. Zwart, P.D. Adams (2012) <i>Acta Cryst.</i> D<b>68</b>:352-67</li>\n"
     else:
-        page += "\t\t<li><i>REFMAC</i>5 for the refinement of macromolecular ""crystal structures. G.N. Murshudov, P. Skubak, A.A. Lebedev, N.S. Pannu, R.A. Steiner, R.A. Nicholls, M.D. Winn, F. Long, A.A. Vagin (2011) <i>Acta Cryst.</i> D<b>67</b>:355–367</li>\n"
+        page += "\t\t<li><i>REFMAC</i>5 for the refinement of macromolecular ""crystal structures. G.N. Murshudov, P. Skubak, A.A. Lebedev, N.S. Pannu, R.A. Steiner, R.A. Nicholls, M.D. Winn, F. Long, A.A. Vagin (2011) <i>Acta Cryst.</i> D<b>67</b>:355-367</li>\n"
     if which("sfcheck"):
-        page += "\t\t<li><i>SFCHECK</i>: a unified set of procedures for evaluating the quality of macromolecular structure-factor data and their agreement with the atomic model. A.A. Vaguine, J. Richelle, S.J. Wodak (1999) <i>Acta Cryst.</i> D<b>55</b>:191–205</li>\n"
+        page += "\t\t<li><i>SFCHECK</i>: a unified set of procedures for evaluating the quality of macromolecular structure-factor data and their agreement with the atomic model. A.A. Vaguine, J. Richelle, S.J. Wodak (1999) <i>Acta Cryst.</i> D<b>55</b>:191-205</li>\n"
     page += """
-\t\t<li>The <i>Computational Crystallography Toolbox</i>: crystallographic algorithms in a reusable software framework. R.W. Grosse-Kunstleve, N.K. Sauter, N.W. Moriarty, P.D. Adams (2002) <i>J. Appl. Crystallogr.</i> <b>35</b>:126–136</li>
+\t\t<li>The <i>Computational Crystallography Toolbox</i>: crystallographic algorithms in a reusable software framework. R.W. Grosse-Kunstleve, N.K. Sauter, N.W. Moriarty, P.D. Adams (2002) <i>J. Appl. Crystallogr.</i> <b>35</b>:126-136</li>
 \t\t</ul>
 \t\t&nbsp;
 \t\t<ul>
-\t\t<li>Linking crystallographic model and data quality.  P.A. Karplus & K. Diederichs (2012) <i>Science</i> <b>336</b>:1030–3</li>
-\t\t<li>Assessing and maximizing data quality in macromolecular crystallography. P.A. Karplus & K. Diederichs (2015) <i>Cur. Op. in Str. Biology</i> <b>34</b>:60–68</li>
-\t\t<li>Better models by discarding data? P.A. Karplus & K. Diederichs (2013) <i>Acta Cryst.</i> D<b>59</b>:1215–1222</li>
+\t\t<li>Linking crystallographic model and data quality.  P.A. Karplus & K. Diederichs (2012) <i>Science</i> <b>336</b>:1030-3</li>
+\t\t<li>Assessing and maximizing data quality in macromolecular crystallography. P.A. Karplus & K. Diederichs (2015) <i>Cur. Op. in Str. Biology</i> <b>34</b>:60-68</li>
+\t\t<li>Better models by discarding data? P.A. Karplus & K. Diederichs (2013) <i>Acta Cryst.</i> D<b>59</b>:1215-1222</li>
 \t\t</ul>
 
 
