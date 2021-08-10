@@ -423,7 +423,7 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
                 color = "#6AADE4"
             else:  # Rwork
                 values_column = 1  # for refmac
-                values_range = (27, 33)  # for phenix
+                values_range = (13, 18)  # for phenix
                 values_label = r'$\it{R}_\mathrm{work}$'
                 color = "#0065BD"
             prefix = project + "_R" + str(flag).zfill(2) + "_" + \
