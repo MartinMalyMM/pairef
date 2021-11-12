@@ -311,6 +311,8 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
             n_bins_low = n_bins_low - 1
             n_i_obs_thinner_shell = \
                 sqrt(2) * n_i_obs_low / pow(n_bins_low, 1.5)
+    if n_bins_low <= 1:
+        n_bins_low = 2
     # Now `n_bins_low` is ready
 
     if args.res_shells:
