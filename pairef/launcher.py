@@ -10,7 +10,7 @@ from .preparation import welcome, create_workdir, output_log, def_res_shells
 from .preparation import which, res_high_from_xyzin, res_from_mtz, res_opt
 from .preparation import calculate_merging_stats, run_pdbtools
 from .preparation import res_from_hklin_unmerged, check_refinement_software
-from .commons import twodec, twodecname, warning_my, try_symlink
+from .commons import twodec, twodecname, warning_my, try_symlink, Popen_my
 from .refinement import collect_stat_OVERALL
 from .refinement import collect_stat_OVERALL_AVG
 from .refinement import collect_stat_BINNED
@@ -105,7 +105,7 @@ def process_arguments(input_args):
     parser = MyArgumentParser(
         description="Automatic PAIRed REFinement protocol",
         epilog='Dependencies: CCP4 Software Suite or PHENIX containing CCTBX '
-        'with Python 2.7',
+        'with Python',
         prog='ccp4-python -m pairef',
         add_help=False)
 
@@ -298,6 +298,10 @@ def process_arguments(input_args):
     #              args.reset_bfactor))):
     #     parser.error("The argument --prerefinement-add-to-bfactor requires the"
     #                  " argument --complete or --prerefinement-reset-bfactor.")
+    try:  # Python 2/3 support
+        long
+    except NameError:
+        long = int
     if args.complete_cross_validation and isinstance(args.flag, (int, long)):
         parser.error("It is a non-sense to use the option -f with the option "
                      "--complete.")
@@ -404,7 +408,7 @@ def main(args):
         import cctbx.miller
     except ImportError:
         sys.stderr.write("ERROR: This version of pairef module requires "
-                         "Python 2.7 from CCTBX.\n"
+                         "Python from CCTBX.\n"
                          "It has to be executed using command:"
                          "ccp4-python -m pairef ARGUMENTS\n"
                          "or\n"
@@ -554,6 +558,10 @@ def main(args):
         # Python 2.x requires the bracket (int, long)
         # https://stackoverflow.com/questions/3501382/
         # checking-whether-a-variable-is-an-integer-or-not
+        try:  # Python 2/3 support
+            long
+        except NameError:
+            long = int
         if not isinstance(args.flag, (int, long)):
             args.flag = 0
         flag_sets = [args.flag]
@@ -609,9 +617,10 @@ def main(args):
             xyzin_start = run_pdbtools(args, baverage)
         else:
             xyzin_start = run_pdbtools(args)
-    shutil.copy2(args.xyzin,
-                 args.project + "_" + twodecname(shells[0]) + "A" + \
-                 settings["pdbORmmcif"])
+    pdbfilename_renamed = args.project + "_" + twodecname(shells[0]) + "A" + \
+        settings["pdbORmmcif"]
+    if args.xyzin != pdbfilename_renamed:
+        shutil.copy2(args.xyzin, pdbfilename_renamed)
     if args.test:
         sys.exit(0)
 

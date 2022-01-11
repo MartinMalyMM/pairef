@@ -10,7 +10,6 @@ import numpy as np
 from collections import namedtuple
 import platform
 import shutil
-import cgi
 import warnings
 from .commons import twodec, twodecname, fourdec
 from .preparation import which
@@ -629,7 +628,7 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
 
     import getpass
     import socket
-
+    import html
 
     page = """<!DOCTYPE html>
 <head>
@@ -789,7 +788,7 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
                 '</a><br />\n'
             page += '\t\t\t\t<pre>\n'
             with open(args.project + "_R-values.csv", "r") as csvfile:
-                page += csvfile.read()
+                page += html.escape(csvfile.read())
             page += '</pre>'
             page += '\n\t\t\t\t<p class="note">Note: For each incremental ' \
                 'step of resolution from X->Y, the <i>R</i>-values were ' \
@@ -890,7 +889,7 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
             '' + args.project + '_merging_stats.csv</a></p>\n'
         page += '\t\t<pre>\n'
         with open(args.project + "_merging_stats.csv", "r") as csvfile:
-            page += cgi.escape(csvfile.read())
+            page += html.escape(csvfile.read())
         page += '\t\t</pre>\n'
 
     # Statistics vs. cycle

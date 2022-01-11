@@ -8,7 +8,7 @@ from math import sqrt, pow
 from collections import OrderedDict  # Python 2.7
 from .settings import warning_dict, date_time, settings
 from .commons import twodec, twodecname, fourdec, extract_from_file
-from .commons import warning_my
+from .commons import warning_my, Popen_my
 
 
 BINS_LOW = 10
@@ -221,13 +221,14 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
     n_i_obs = 0
     n_i_obs_low = 0
     n_flag_sets = 0
+
     if refinement == "refmac":
         # using `mtzdump` from CCP4 to get both n_i_obs_low and n_flag_sets
         tool = "mtzdump"
-        p = subprocess.Popen(["mtzdump", "HKLIN", args.hklin],
-                             stdin=subprocess.PIPE,
-                             stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                             shell=settings["sh"])
+        p = Popen_my(["mtzdump", "HKLIN", args.hklin],
+                     stdin=subprocess.PIPE,
+                     stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                     shell=settings["sh"])
         com = "STATS NBIN 1 RESO " + twodec(res_low) + " " \
             "" + twodec(args.res_init) + "\n end\n"
         output, err = p.communicate(com)
@@ -255,7 +256,7 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
     elif refinement == "phenix":
         from iotbx.reflection_file_reader import any_reflection_file
         from iotbx import mtz
-        import cStringIO
+        import io
         tool = "CCTBX"
         # 1. get n_i_obs_low using CCTBX
         n_i_obs_low_list = []
@@ -272,7 +273,7 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
         n_i_obs_low = min(n_i_obs_low_list)
         # 2. get n_flag_sets using CCTBX
         mtz_object = mtz.object(file_name=args.hklin)
-        out = cStringIO.StringIO()
+        out = io.StringIO()
         mtz_object.show_summary(out=out)
         out = out.getvalue()
         out_lines = out.splitlines()
@@ -398,7 +399,7 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
             # n_i_obs_shell_high = n_i_obs_thinner_shell * sqrt(n_bins_low + i)
             # n_i_obs_remaining = n_i_obs_remaining - n_i_obs_shell_high
             # n_bins_high += 1
-        # p = subprocess.Popen(["mtzdump", "HKLIN", args.hklin],
+        # p = Popen_my(["mtzdump", "HKLIN", args.hklin],
                              # stdin=subprocess.PIPE,
                              # stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         # com = "STATS NBIN " + str(n_bins_high) + " RESO " \
@@ -505,7 +506,7 @@ def res_from_hklin_unmerged(hklin_unmerged):
         ###     res_from_mtz(hklin_unmerged)  # This needs to much RAM...
 
         ## Solution 2 - mtzdump
-        ## p = subprocess.Popen(["mtzdump", "HKLIN", hklin_unmerged],
+        ## p = Popen_my(["mtzdump", "HKLIN", hklin_unmerged],
         ##                      stdin=subprocess.PIPE,
         ##                      stdout=subprocess.PIPE, stderr=subprocess.PIPE)
         ## com = "end\n"
@@ -529,6 +530,10 @@ def res_from_hklin_unmerged(hklin_unmerged):
     # may be an XDS ASCII file
     elif "hkl" in hklin_unmerged.split(".")[-1].lower():
         hklin_unmerged_head = []
+        try:  # Python 2 and 3 support
+            xrange
+        except NameError:
+            xrange = range
         with open(hklin_unmerged, "r") as hklin_unmerged_file:
             hklin_unmerged_head = \
                 [next(hklin_unmerged_file) for x in xrange(1000)]
@@ -663,7 +668,7 @@ def res_opt(shell, args, refinement="refmac"):
     command = ["sfcheck", "-f", hklin, "-m", xyzin]
     logfilename = prefix + "_sfcheck.out"
     with open(logfilename, "w") as logfile:
-        p = subprocess.Popen(
+        p = Popen_my(
             command, stdout=logfile, stderr=logfile, shell=settings["sh"])
         out, err = p.communicate()
 
@@ -714,6 +719,8 @@ def calculate_merging_stats(hklin_unmerged, shells, project, bins_low,
     def calculate_merging_stats_run_cctbx(project, hklin, res_high,
                                           res_low=None, n_bins=None):
         import iotbx.merging_statistics
+        import gc
+        gc.collect()
         i_obs = iotbx.merging_statistics.select_data(file_name=hklin,
                                                      data_labels=None)
         result = iotbx.merging_statistics.dataset_statistics(
@@ -777,7 +784,7 @@ def calculate_merging_stats(hklin_unmerged, shells, project, bins_low,
         for i in range(len(lines)):
             # Compute CC*
             bin_CChalf = lines[i].split()[-2]
-            if bin_CChalf < 0:
+            if float(bin_CChalf) < 0:
                 bin_CCstar = "N/A"
                 warning_my("CC*", "A CC*-value for a particular shell "
                            "could not be calculated as it is undefined "
@@ -838,9 +845,8 @@ def run_baverage(project, xyzin, res_init):
                prefix + ".tab", "XYZOUT", xyzout]
     com = "end\n"
     with open(logout, "w") as logfile:
-        p = subprocess.Popen(command, stdin=subprocess.PIPE,
-                             stdout=logfile, shell=settings["sh"])
-        #               encoding='utf8')  # Probably required in Python 3
+        p = Popen_my(command, stdin=subprocess.PIPE,
+                     stdout=logfile, shell=settings["sh"])
         p.communicate(com)
 
     baverage = extract_from_file(filename=logout,
@@ -870,9 +876,8 @@ def run_baverage(project, xyzin, res_init):
     # command = ["baverage", "XYZIN", xyzin, "RMSTAB",
     #            prefix + ".tab", "XYZOUT", xyzout]
     # with open(logout, "w") as logfile:
-    #     p = subprocess.Popen(command, stdin=subprocess.PIPE,
+    #     p = Popen_my(command, stdin=subprocess.PIPE,
     #                          stdout=logfile)
-    #     #               encoding='utf8')  # Probably required in Python 3
     #    p.communicate(com)
     # return xyzout
     # return bfac_set
@@ -996,9 +1001,8 @@ def run_pdbtools(args, baverage=0):
             " ".join(pdbtools_args))
         if which("phenix.pdbtools"):
             with open(logout, "w") as logfile:
-                p = subprocess.Popen(["phenix.pdbtools", args.xyzin] + pdbtools_args,
-                                     stdout=logfile, shell=settings["sh"])
-                #               encoding='utf8')  # Probably required in Python 3
+                p = Popen_my(["phenix.pdbtools", args.xyzin] + pdbtools_args,
+                             stdout=logfile, shell=settings["sh"])
                 p.communicate()
         else:
             import mmtbx.command_line.pdbtools

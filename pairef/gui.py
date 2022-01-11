@@ -7,18 +7,23 @@ import webbrowser
 import platform
 try:
     from PyQt4.QtGui import *
-    from PyQt4.QtCore import *  #
+    from PyQt4.QtCore import *
 except ImportError:
-    sys.stderr.write(
-        "Module PyQt4 is required for the graphical interface of PAIREF. "
-        "Please install it or execute a PAIREF job from command-line.\n"
-        "Tip: PyQt4 is installed in ccp4-python.\n"
-        "Aborting.\n")
-    sys.exit(1)
+    try:
+        from PySide2.QtGui import *
+        from PySide2.QtCore import *
+        from PySide2.QtWidgets import *
+    except ImportError or ModuleNotFoundError:
+        sys.stderr.write(
+            "Module PyQt4 or PySide2  is required for the graphical interface of "
+            "PAIREF. Please install it or execute a PAIREF job from command-line."
+            "\nTip: PyQt4 is installed in ccp4-python.\n"
+            "Aborting.\n")
+        sys.exit(1)
 
 
 class MyWindow(QWidget):
-    """PAIREF graphical interface (in PyQt4)"""
+    """PAIREF graphical interface (in PyQt)"""
     def __init__(self):
         super(MyWindow, self).__init__()
         # Allow to term the app pressing Ctrl+C in console
@@ -442,6 +447,8 @@ QLineEdit#required {
         else:
             filename = QFileDialog.getOpenFileName(
                 self, action, "", filetype)
+        if isinstance(filename, tuple):
+            filename = filename[0]
         QLine.setText(filename)
 
     def checkfile(self):
@@ -679,7 +686,7 @@ QLineEdit#required {
 
 
 def gui():
-    """Opens the window of PAIREF graphical interface (in PyQt4)"""
+    """Opens the window of PAIREF graphical interface (in PyQt4 or PySide2)"""
     app = QApplication(sys.argv)
     w = MyWindow()
     app.exec_()

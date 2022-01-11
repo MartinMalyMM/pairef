@@ -159,11 +159,28 @@ def try_symlink(src, dst):
         bool: True"""
 
     import os
+    # New symlink only if it has not been made previously
+    if os.path.isfile(dst):
+        return True
     if hasattr(os, "symlink"):
-        # New symlink only if it has not been made previously
-        if not os.path.isfile(dst):
+        try:
             os.symlink(src, dst)
+        except OSError:
+            import shutil
+            shutil.copy2(src, dst)
     else:  # Windows
         import shutil
         shutil.copy2(src, dst)
     return True
+
+
+def Popen_my(*args, **kwargs):
+    """Fuction for compatibility for both Python 2 and 3. If Python 3 is used,
+    returns the function Popen() with the extra required argument
+    encoding=utf-8"""
+    import subprocess
+    import platform
+    if int(platform.python_version_tuple()[0]) == 2:
+        return subprocess.Popen(*args, **kwargs)
+    else:  # Python 3
+        return subprocess.Popen(encoding="utf-8", *args, **kwargs)

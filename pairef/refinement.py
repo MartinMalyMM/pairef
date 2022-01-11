@@ -9,6 +9,7 @@ import shutil
 from math import sqrt
 from .settings import warning_dict, settings
 from .commons import twodec, twodecname, fourdec, extract_from_file, warning_my
+from .commons import Popen_my
 
 
 def refinement_refmac(res_cur,
@@ -232,8 +233,7 @@ solvent YES
         print("       Running command:")
         print("       " + " ".join(command))
     with open(logout, "w") as logfile:
-        p = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=logfile)
-        #                    encoding='utf8')  # Probably required in Python 3
+        p = Popen_my(command, stdin=subprocess.PIPE, stdout=logfile)
         p.communicate(com)
     for fileout in [logout, hklout, xyzout]:
         if not os.path.isfile(fileout):
@@ -444,9 +444,7 @@ def refinement_phenix(res_cur,
         print("       Running command:")
         print("       " + " ".join(command))
     with open(outout, 'w') as out:
-        p = subprocess.Popen(command, stdout=out, stderr=out,
-                             shell=settings["sh"])
-        #                    encoding='utf8')  # Probably required in Python 3
+        p = Popen_my(command, stdout=out, stderr=out, shell=settings["sh"])
         p.communicate()
     for fileout in [logout, hklout, xyzout, outout]:
         if not os.path.isfile(fileout):
@@ -1025,9 +1023,9 @@ def calculate_correlation(hkl_calc, hklin,
         com_resolution = " resolution 999 " + fourdec(res_high)
     else:
         com_resolution = ""
-    p = subprocess.Popen(["sftools"], stdin=subprocess.PIPE,
-                         stdout=subprocess.PIPE, stderr=subprocess.PIPE,
-                         shell=settings["sh"])
+    p = Popen_my(["sftools"], stdin=subprocess.PIPE,
+                 stdout=subprocess.PIPE, stderr=subprocess.PIPE,
+                 shell=settings["sh"])
     com = "read " + hkl_calc + " col 1 FC_ALL\n" \
         "calc col FC_ALLsq = col FC_ALL col FC_ALL *\n" \
         "read " + hklin + " col " + i_obs_label + "\n" \

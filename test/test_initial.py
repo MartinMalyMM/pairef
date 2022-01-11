@@ -8,11 +8,6 @@ from helper import run, config, tmp_environ
 from pairef.preparation import create_workdir, which
 
 
-def test_python_version():
-    assert int(platform.python_version_tuple()[0]) == 2
-    assert int(platform.python_version_tuple()[1]) >= 7
-
-
 RES_SHELLS_GOOD = "1.9,1.8,1.7,1.6,1.5,1.4"
 
 prog = 'cctbx.python -m pairef'
@@ -36,7 +31,9 @@ def test_no_args(tmp_environ):
     # assert not cp.stdout
     # assert cp.stderr == help + "\n" + prog + \
     #     ": error: argument --XYZIN/--xyzin is required\n"
-    assert cp.stderr == "error: argument --XYZIN/--xyzin is required\n"
+    assert (cp.stderr == "error: argument --XYZIN/--xyzin is required\n" or \
+        cp.stderr == "error: the following arguments are required: " \
+        "--XYZIN/--xyzin, --HKLIN/--hklin\n")
 
 
 def test_file_not_exists(tmp_environ):
