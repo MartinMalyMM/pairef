@@ -10,6 +10,7 @@ from .preparation import welcome, create_workdir, output_log, def_res_shells
 from .preparation import which, res_high_from_xyzin, res_from_mtz, res_opt
 from .preparation import calculate_merging_stats, run_pdbtools
 from .preparation import res_from_hklin_unmerged, check_refinement_software
+from .preparation import suggest_cutoff
 from .commons import twodec, twodecname, warning_my, try_symlink, Popen_my
 from .refinement import collect_stat_OVERALL
 from .refinement import collect_stat_OVERALL_AVG
@@ -720,7 +721,7 @@ def main(args):
                             project=args.project,
                             statistics=["res_opt"],
                             n_bins_low=n_bins_low,
-                            title="Optical resolution",
+                            title=r"Optical resolution $(\mathrm{\AA})$",
                             filename_suffix="Optical_resolution", flag=flag)
         matplotlib_line(shells=[shells[0]],
                         project=args.project,
@@ -797,8 +798,13 @@ def main(args):
                 twodecname(res_cur) +
                 "A_stats_vs_cycle", flag=flag,
                 refinement=refinement)
-            write_log_html(shells, shells_ready_with_res_init, args,
-                           versions_dict, flag_sets, res_cur)
+            if "cutoff" in vars():
+                write_log_html(shells, shells_ready_with_res_init, args,
+                               versions_dict, flag_sets, res_cur,
+                               cutoff=cutoff, accepted=accepted, reason=reason)
+            else:
+                write_log_html(shells, shells_ready_with_res_init, args,
+                               versions_dict, flag_sets, res_cur)
             print("       Calculating statistics of the refined structure "
                   "model...", end="")
             if refinement == "refmac":
@@ -945,13 +951,19 @@ def main(args):
                         title=r"$\it{R}_{\mathrm{free}}-"
                         r"\it{R}_{\mathrm{work}}$",
                         filename_suffix="Rgap", flag=flag)
+        cutoff, accepted, reason = suggest_cutoff(
+            args, shells[:i + 2], n_bins_low, flag)
+        print("       Preliminary suggested cutoff: " + twodec(cutoff[0]) + " A")
         write_log_html(shells, shells_ready_with_res_init, args,
-                       versions_dict, flag_sets)
+                       versions_dict, flag_sets, cutoff=cutoff,
+                       accepted=accepted, reason=reason)
 
+    # cutoff, accepted, reason = suggest_cutoff(args, shells, n_bins_low, flag)
     # If unmerged data are in disposal, calculate CC1/2 and CC*
     # for future graphs of CCwork, CCfree
     if args.hklin_unmerged:
-        write_log_html(shells, shells, args, versions_dict, flag_sets)
+        write_log_html(shells, shells, args, versions_dict, flag_sets,
+                       cutoff=cutoff, accepted=accepted, reason=reason)
         calculate_merging_stats(args.hklin_unmerged, shells, args.project,
                                 bins_low, res_low_from_hklin_unmerged,
                                 res_high_from_hklin_unmerged)
@@ -991,12 +1003,23 @@ def main(args):
                             n_bins_low=n_bins_low,
                             title=r"CC$_\mathrm{free}$",
                             filename_suffix="CCfree")
+        cutoff, accepted, reason = suggest_cutoff(
+            args, shells, n_bins_low, flag)
         write_log_html(shells, shells, args, versions_dict, flag_sets,
-                       ready_merging_statistics=True, done=True)
+                       ready_merging_statistics=True, done=True,
+                       cutoff=cutoff, accepted=accepted, reason=reason)
     else:
+        cutoff, accepted, reason = suggest_cutoff(
+            args, shells, n_bins_low, flag)
         write_log_html(shells, shells, args, versions_dict, flag_sets,
-                       done=True)
-
+                       done=True,
+                       cutoff=cutoff, accepted=accepted, reason=reason)
+    print("Suggested cutoff: ")
+    if cutoff[0] == cutoff[1]:
+        print(twodec(cutoff[0]) + " A")
+    else:
+        print(twodec(cutoff[0]) + " A  (strict)")
+        print(twodec(cutoff[1]) + " A  (benevolent)")
     if warning_dict:
         print("\nCalculation ended.")
         print("These warning messages appeared during calculation:")

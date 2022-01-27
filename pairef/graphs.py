@@ -11,7 +11,7 @@ from collections import namedtuple
 import platform
 import shutil
 import warnings
-from .commons import twodec, twodecname, fourdec
+from .commons import twodec, twodecname, fourdec, pick_work_free_from_csv_line
 from .preparation import which
 from .settings import warning_dict, date_time
 
@@ -91,35 +91,6 @@ def matplotlib_bar(args, values="R-values", flag_sets=[], ready_shells=[]):
     values_free_list = []
     errors_work_list = []
     errors_free_list = []
-
-    def pick_work_free_from_csv_line(line, values_work_list, values_free_list,
-                                     errors_work_list, errors_free_list,
-                                     errors=False):
-        if line.lstrip()[0] == "#":  # If it is a comment, do not load data
-            continue_sign = True
-            return values_work_list, values_free_list, errors_work_list, errors_free_list, continue_sign
-        continue_sign = False
-        try:
-            values_work_list.append(float(line.split()[3]))
-        except ValueError:
-            values_work_list.append(None)
-        try:
-            values_free_list.append(float(line.split()[6]))
-        except ValueError:
-            values_free_list.append(None)
-        if errors:  # return also standard error of mean
-            try:
-                errors_work_list.append(float(line.split()[9]))
-            except ValueError:
-                errors_work_list.append(float('nan'))            
-            try:
-                errors_free_list.append(float(line.split()[10]))
-            except ValueError:
-                errors_free_list.append(float('nan'))
-        else:
-            errors_work_list.append(float('nan'))
-            errors_free_list.append(float('nan'))
-        return values_work_list, values_free_list, errors_work_list, errors_free_list, continue_sign
 
     if flag_sets:
         # Chart for the complete cross-validation
@@ -590,7 +561,8 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
 
 
 def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
-                   res_cur=0, ready_merging_statistics=False, done=False):
+                   res_cur=0, ready_merging_statistics=False, done=False,
+                   cutoff=[], accepted=[], reason=[]):
     """Created html output log.
 
     Args:
@@ -639,7 +611,7 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
     page += """</head>
 <body>
     <div id="header">
-        <div id="title">PAIREF</div>
+        <div id="title">PAIREF """ + versions_dict["pairef_version"] + """</div>
         <div id="subtitle">Automatic PAIRed REFinement protocol</div>
     </div>
 
@@ -663,6 +635,39 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
             """REFRESH</a></span>\n"""
         page += "\t</div>\n"
 
+    if cutoff:  # Assuming vars `accepted` and `reason` are also available
+        if done:
+            page += "\t<h2>VERDICT - suggested cutoff: "
+        else:
+            page += "\t<h2>Preliminary suggested cutoff: "
+        if cutoff[0] == cutoff[1]:
+            page += twodec(cutoff[0])
+        else:
+            page += "strict: " + twodec(cutoff[0]) + " A; benevolent: "  + twodec(cutoff[1])
+        page += " A</h2>\n"
+        page += "\t\t<table class='suggestion'>\n"
+        page += "\t\t<tr><th>Shell</th><th>Accepted?</th><th>Reason</th></tr>\n"
+        for i, shell in enumerate(ready_shells[1:]):
+            if not accepted[i][1] and not accepted[i][0]:
+                page += "\t\t<tr class='rejected'>\n"
+            elif "lowNfree" + twodec(shell) in warning_dict:
+                page += "\t\t<tr class='lowNfree'>\n"
+            elif accepted[i][1] and not accepted[i][0]:
+                page += "\t\t<tr class='benevolent'>\n"
+            else:  # elif accepted[i][0]:
+                page += "\t\t<tr class='accepted'>\n"
+            page += "\t\t\t<td>"
+            page += twodec(shells[i]) + "-" + twodec(shell) + " A</td>\n"
+            page += "\t\t\t<td>"
+            if accepted[i][0]:
+                page += "Yes"
+            elif accepted[i][1] and not accepted[i][0]:
+                page += "Warning"
+            else:
+                page += "No"
+            page += "</td>\n\t\t\t<td>"
+            page += "<br />\n".join(reversed(reason[i])) + "</td>\n\t\t</tr>\n"
+        page += "\t\t</table>\n"
     page += "\t<h2>Input parameters</h2>\n"
     page += "\t\t<table>\n"
     page += "\t\t<tr><td>Project:</td><td>" + args.project + "</td></tr>\n"
@@ -823,7 +828,7 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
 
         # "Rfree", "CCfree", "Rwork", "CCwork", "No_work_free_refl." graphs
         if not args.complete_cross_validation:
-            page += '\t<h2>Dependence on resolution</h2>\n'
+            page += '\t<h2>Model statistics - binned values</h2>\n'
             # Show relating warnings if there are some
             warning_keys = ["Nfree", "high_R", "low_R", "low_CC"]
             page = warning_orangebox(warning_keys, page)

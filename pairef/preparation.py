@@ -8,7 +8,7 @@ from math import sqrt, pow
 from collections import OrderedDict  # Python 2.7
 from .settings import warning_dict, date_time, settings
 from .commons import twodec, twodecname, fourdec, extract_from_file
-from .commons import warning_my, Popen_my
+from .commons import warning_my, Popen_my, pick_work_free_from_csv_line
 
 
 BINS_LOW = 10
@@ -717,12 +717,42 @@ def calculate_merging_stats(hklin_unmerged, shells, project, bins_low,
 
     ## Calculate statistics
     def calculate_merging_stats_run_cctbx(project, hklin, res_high,
-                                          res_low=None, n_bins=None):
+                                          res_low=None, n_bins=None,
+                                          data_labels=None):
         import iotbx.merging_statistics
         import gc
         gc.collect()
+
+        # Determine data labels (can be ambiguous in MTZ file)
+        if "mtz" in hklin.split(".")[-1] and not data_labels:
+            try:
+                from iotbx.reflection_file_reader import any_reflection_file
+                miller_arrays = any_reflection_file(hklin).as_miller_arrays()
+                labels_i = []
+                for label in miller_arrays:
+                    if "xray.intensity" in str(label.observation_type()):
+                        label_here = str(label.info()).split(":")[-1]
+                        if ",merged" in label_here:
+                            label_here = label_here.replace(",merged", "")
+                        labels_i.append(label_here)
+                if len(labels_i) == 0:
+                    print("No intensity arrays were found in the file " + hklin)
+                    print(".\nMerging statistics could not be calculated.")
+                    return False
+                elif len(labels_i) == 1:  # Default behaviour is OK
+                    # label_imean = label_imean[0]
+                    pass  # data_labels = None
+                else:  # Multiple intensity arrays - specifying one:
+                    for label in labels_i:
+                        if "I,SIGI" in label:
+                            data_labels = label
+                            break
+                if not data_labels:
+                    data_labels = labels_imean[0]
+            except:
+                pass  # Try to continue...
         i_obs = iotbx.merging_statistics.select_data(file_name=hklin,
-                                                     data_labels=None)
+                                                     data_labels=data_labels)
         result = iotbx.merging_statistics.dataset_statistics(
             i_obs=i_obs,
             # crystal_symmetry=symm,
@@ -735,10 +765,11 @@ def calculate_merging_stats(hklin_unmerged, shells, project, bins_low,
             "A.log"
         with open(logfilename, "w") as logfile:
             result.show(out=logfile, header=False)
-        return True
+        return data_labels
 
     bins_total_proposed = bins_low + shells
     bins_total = []
+    labels = None
     for i in range(len(bins_total_proposed)-1):
         if res_low_from_hklin_unmerged < bins_total_proposed[i + 1] \
                 or res_high_from_hklin_unmerged > bins_total_proposed[i]:
@@ -754,10 +785,12 @@ def calculate_merging_stats(hklin_unmerged, shells, project, bins_low,
             bins_total.append(bins_total_proposed[i + 1])
             # Remove duplicates from bins_total and keep order
             bins_total = list(OrderedDict.fromkeys(bins_total))
-            calculate_merging_stats_run_cctbx(
+            labels = calculate_merging_stats_run_cctbx(
                 project, hklin_unmerged, res_high=bins_total[i + 1],
-                res_low=bins_total[i], n_bins=1)
+                res_low=bins_total[i], n_bins=1, data_labels=labels)
         print(" .", end="")
+    if labels:
+        print("\n       Using labels=" + str(labels))
     print("")
 
     # Prepare a csv file header
@@ -1022,3 +1055,248 @@ def run_pdbtools(args, baverage=0):
                          "by pdbtools. Check the log file " + logout + "."
                          "\nAborting.\n")
         sys.exit(1)
+
+
+def suggest_cutoff(args, shells, n_bins_low, flag):
+    shells_high = shells[1:]
+
+    # Pick overall R-values
+    csvfilename = args.project + "_R-values.csv"
+    Rwork_overall_list = []
+    Rfree_overall_list = []
+    errors_Rwork_overall_list = []
+    errors_Rfree_overall_list = []
+    errors = False
+    with open(csvfilename, "r") as csvfile:
+        for line in csvfile.readlines():
+            Rwork_overall_list, Rfree_overall_list, errors_Rwork_overall_list, \
+                errors_Rfree_overall_list, continue_sign = \
+                pick_work_free_from_csv_line(
+                    line, Rwork_overall_list, Rfree_overall_list,
+                    errors_Rwork_overall_list, errors_Rfree_overall_list, errors)
+            if continue_sign:
+                continue
+
+    # Pick CCstar (and CC1/2)
+    csvfilename_merg = args.project + "_merging_stats.csv"
+    if os.path.isfile(csvfilename_merg):
+        CChalf_list = []
+        CCstar_list = []
+        with open(csvfilename_merg, "r") as csvfile:
+            for line in csvfile.readlines()[1 + n_bins_low:]:  #  high-res only
+                if line.lstrip()[0] == "#":  # If it is a comment
+                    continue                 # do not load data
+                try:
+                    CCstar_list.append(float(line.split()[-1]))
+                except ValueError:
+                    CCstar_list.append((float("nan")))
+                try:
+                    CChalf_list.append(float(line.split()[-3]))
+                except ValueError:
+                    CChalf_list.append((float("nan")))
+
+    # Pick R-values and CCwork for the highest resolution shells
+    if not args.complete_cross_validation:
+        Nfree_shell_list = []
+        Rwork_shell_list = []
+        Rfree_shell_list = []
+        CCwork_shell_list = []
+        # CCfree_shell_list = []
+        for shell in shells_high:
+            csvfilename = args.project + "_R" + str(flag).zfill(2) + "_" \
+                "" + twodecname(shell) + "A.csv"
+            with open(csvfilename, "r") as csvfile:
+                # for line in csvfile.readlines()[7 + n_bins_low:]:  #  high-res only
+                line = csvfile.readlines()[-1]  # highest-res only
+            try:
+                Nfree_shell_list.append(float(line.split()[5]))
+            except ValueError:
+                Nfree_shell_list.append((float("nan")))
+            try:
+                Rwork_shell_list.append(float(line.split()[6]))
+            except ValueError:
+                Rwork_shell_list.append((float("nan")))
+            try:
+                Rfree_shell_list.append(float(line.split()[7]))
+            except ValueError:
+                Rfree_shell_list.append((float("nan")))
+            try:
+                CCwork_shell_list.append(float(line.split()[8]))
+            except ValueError:
+                CCwork_shell_list.append((float("nan")))
+
+    # Rate shells
+    # 1  overall Rfree decreased
+    # 2  overall Rfree did not increase more than 0.0002 (including) and
+    #    Rwork increased
+    # 3  0.40 >= Rfree > 0.45 in the highest resolution shell but Nfree < 50
+    # 4  Rfree > 0.45 in the highest resolution shell but Nfree < 50
+    # ---
+    # 5  0.40 >= Rfree > 0.45 in the highest resolution shell
+    # 6  0.40 >= Rwork > 0.45 in the highest resolution shell
+    # 7  overall Rfree increased > 0.0002
+    # ---
+    # 8  Rfree >= 0.45 in the highest resolution shell
+    # 9  Rwork >= 0.45 in the highest resolution shell
+    # 10 CCwork > CC*
+    # 11 CC1/2 <= 0, CC* undefined
+    # 12 overall Rwork increased > 0.0100 (increased pretty much)
+    # cutoff = shells[0]
+    # rating = [[]] * len(shells_high)
+    # reason = [[]] * len(shells_high)
+    # accepted = [None] * len(shells_high)
+    rating = []
+    reason = []
+    for i, shell in enumerate(shells_high):
+        rating.append([])
+        reason.append([])
+        reason_phrase =  " while using data in the shell " + \
+            twodec(shells[i]) + "-" + twodec(shells[i + 1]) + " A"
+        # If CC* is undefined or smaller than CCwork
+        if os.path.isfile(csvfilename_merg):
+            if CChalf_list[i] <= 0 or CChalf_list[i] == float("nan"):
+                rating[i].append(11)
+                reason[i].append("CC1/2 in high resolution is negative or "
+                                 "undefined" + reason_phrase)
+            else:
+                if not args.complete_cross_validation:
+                    if CCstar_list[i] < CCwork_shell_list[i] or \
+                            CCstar_list[i] == float("nan"):
+                        rating[i].append(10)
+                        reason[i].append("CC* in high resolution is lower "
+                                         "than CCwork" + reason_phrase)
+        # If an R-value >= 0.45 or >= 40
+        if not args.complete_cross_validation:
+            # Rwork
+            if Rwork_shell_list[i] >= 0.45 or \
+                    Rwork_shell_list[i] == float("nan"):
+                rating[i].append(9)
+                reason[i].append("Rwork in high resolution is higher than "
+                                 "0.45" + reason_phrase)
+            elif Rwork_shell_list[i] >= 0.40:
+                rating[i].append(6)
+                reason[i].append("Rwork in high resolution is higher than "
+                                 "0.40" + reason_phrase)
+            # Rfree
+            if Nfree_shell_list[i] < 50:
+                warning_phrase = \
+                    "here are only " + str(int(Nfree_shell_list[i])) + "" + \
+                    " < 50 free reflections in the resolution shell " + \
+                    "" + twodec(shells[i]) + "-" + \
+                    "" + twodec(shells[i + 1]) + " A. Values of " + \
+                    "statistics Rfree and CCfree in this shell " + \
+                    "could be misleading. Consider setting " + \
+                    "thicker resolution shells."
+            if Rfree_shell_list[i] >= 0.45 or \
+                    Rfree_shell_list[i] == float("nan"):
+                if Nfree_shell_list[i] >= 50:
+                    rating[i].append(8)
+                    reason[i].append("Rfree in high resolution is higher than "
+                                     "0.45" + reason_phrase)
+                else:
+                    rating[i].append(4)
+                    reason[i].append(
+                        "Rfree in high resolution is higher than "
+                        "0.45" + reason_phrase + ". But t" + warning_phrase)
+                    warning_my(
+                        "lowNfree" + twodec(shell), "T" + warning_phrase)
+            elif Rfree_shell_list[i] >= 0.40:
+                if Nfree_shell_list[i] >= 50:
+                    rating[i].append(5)
+                    reason[i].append("Rfree in high resolution is higher than "
+                                     "0.40" + reason_phrase)
+                else:
+                    rating[i].append(3)
+                    reason[i].append(
+                        "Rfree in high resolution is higher than "
+                        "0.40" + reason_phrase + ". But t" + warning_phrase)
+                    warning_my(
+                        "lowNfree" + twodec(shell), "T" + warning_phrase)
+        # Differences in overall R-values
+        if Rwork_overall_list[i] > 0.01:
+            rating[i].append(12)
+            reason[i].append("Overall Rwork increased pretty much" + \
+                             reason_phrase)
+        elif Rfree_overall_list[i] <= 0.000009:
+            rating[i].append(1)
+            reason[i].append("Overall Rfree decreased" + reason_phrase)
+        elif Rfree_overall_list[i] <= 0.000209 and Rwork_overall_list[i] > 0:
+            rating[i].append(2)
+            reason[i].append("Overall Rwork increased and Rfree remained " + \
+                             "constant" + reason_phrase)
+        else:
+            rating[i].append(7)
+            reason[i].append("Overall Rfree increased" + reason_phrase)
+    # Suggest cutoff(s)
+    cutoff = [shells[0], shells[0]]
+    accepted = []  # order in list: [strict, benevolent] algorithm
+    reason_phrase_bad_previous = "But statistics deteriorate in a previous resolution shell."
+    for i, shell in enumerate(shells_high):
+        accepted.append([None, None])
+        # strict
+        if i != 0 and not accepted[i - 1][0]:
+            accepted[i][0] = False
+            reason[i].insert(0, reason_phrase_bad_previous)
+        elif max(rating[i]) < 5:
+            accepted[i][0] = True
+            cutoff[0] = shell
+        elif max(rating[i]) >= 5:
+            accepted[i][0] = False
+        # benevolent
+        if max(rating[i]) >= 7:
+            accepted[i][1] = False
+        elif max(rating[i]) < 7:
+            accepted[i][1] = True
+            cutoff[1] = shell
+            if i != 0 and not accepted[i - 1][1] and max(rating[i - 1]) > 7:
+                accepted[i][1] = False
+                reason[i].insert(0, reason_phrase_bad_previous)
+            if i >= 2 and not accepted[i - 1][1] and not accepted[i - 2][1]:
+                accepted[i][1] = False
+                reason[i].insert(0, reason_phrase_bad_previous)
+            elif i != 0 and not accepted[i - 1][1] and max(rating[i - 1]) == 7:
+                # Analyse R-values at initial resolution
+                # Pick them
+                csvfilename = args.project + "_Rgap.csv"
+                Rwork_overall_alt_list = []
+                Rfree_overall_alt_list = []
+                with open(csvfilename, "r") as csvfile:
+                    for line in csvfile.readlines():
+                        if line.lstrip()[0] == "#":  # If it is a comment
+                            continue                 # do not load data
+                        try:
+                            Rwork_overall_alt_list.append(float(line.split()[1]))
+                        except ValueError:
+                            Rwork_overall_alt_list.append((float("nan")))
+                        try:
+                            Rfree_overall_alt_list.append(float(line.split()[2]))
+                        except ValueError:
+                            Rfree_overall_alt_list.append((float("nan")))
+                # Be aware: Rwork_overall_alt_list and Rfree_overall_alt_list
+                # has an extra element in the beggining - for the initial resol.!
+                # (in comparison with other lists of statistics in this function)
+                Rfree_overall_alt_diff = \
+                    Rfree_overall_alt_list[i + 1] - Rfree_overall_alt_list[i - 1]
+                Rwork_overall_alt_diff = \
+                    Rwork_overall_alt_list[i + 1] - Rwork_overall_alt_list[i - 1]
+                # Decide about the current and previous shell
+                if Rfree_overall_alt_diff < 0:
+                    accepted[i - 1][1] = True
+                    reason[i - 1][-1] += ". But the next shell compensates it."
+                    accepted[i][1] = True
+                    cutoff[1] = shell
+                elif Rfree_overall_alt_diff <= 0.000209 and Rwork_overall_alt_diff > 0:
+                    accepted[i - 1][1] = True
+                    reason[i - 1][-1] += ". But the next shell compensates it."
+                    accepted[i][1] = True
+                    cutoff[1] = shell
+                else:
+                    accepted[i][1] = False
+                    reason[i].insert(0, reason_phrase_bad_previous)
+    with open("PAIREF_cutoff.txt", "w") as f:
+        f.write(twodec(cutoff[0]))
+    # print(twodec(cutoff[0]), twodec(cutoff[1]))
+    # for i, shell in enumerate(shells_high):
+    #     print(twodec(shell) + "     " + str(accepted[i][0]) + "     " + \
+    #           str(accepted[i][1]) + "     " + str(reason[i]))
+    return(cutoff, accepted, reason)

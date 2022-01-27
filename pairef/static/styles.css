@@ -80,6 +80,33 @@ pre {
     background-color: #98e698;
 }
 
+.accepted {
+    background-color: #98e698;
+}
+
+.rejected {
+    background-color: #ff8080;
+}
+
+.benevolent {
+    background-color: #FF9900;
+}
+
+.lowNfree {
+    background-color: #FAF3AC;
+}
+
+.suggestion td {
+    padding: 0.5ex;
+}
+
+.suggestion th {
+    color: white;
+    background-color: #0065BD;
+    font-weight: bold;
+    padding: 0.5ex;
+}
+
 .note {
     font-style: italic;
 }

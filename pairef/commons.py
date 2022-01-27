@@ -159,9 +159,11 @@ def try_symlink(src, dst):
         bool: True"""
 
     import os
+    import filecmp
     # New symlink only if it has not been made previously
     if os.path.isfile(dst):
-        return True
+        if filecmp.cmp(src, dst):
+            return True  # Nothing to do, files are the same
     if hasattr(os, "symlink"):
         try:
             os.symlink(src, dst)
@@ -184,3 +186,33 @@ def Popen_my(*args, **kwargs):
         return subprocess.Popen(*args, **kwargs)
     else:  # Python 3
         return subprocess.Popen(encoding="utf-8", *args, **kwargs)
+
+
+def pick_work_free_from_csv_line(line, values_work_list, values_free_list,
+                                 errors_work_list, errors_free_list,
+                                 errors=False):
+    if line.lstrip()[0] == "#":  # If it is a comment, do not load data
+        continue_sign = True
+        return values_work_list, values_free_list, errors_work_list, errors_free_list, continue_sign
+    continue_sign = False
+    try:
+        values_work_list.append(float(line.split()[3]))
+    except ValueError:
+        values_work_list.append(None)
+    try:
+        values_free_list.append(float(line.split()[6]))
+    except ValueError:
+        values_free_list.append(None)
+    if errors:  # return also standard error of mean
+        try:
+            errors_work_list.append(float(line.split()[9]))
+        except ValueError:
+            errors_work_list.append(float('nan'))            
+        try:
+            errors_free_list.append(float(line.split()[10]))
+        except ValueError:
+            errors_free_list.append(float('nan'))
+    else:
+        errors_work_list.append(float('nan'))
+        errors_free_list.append(float('nan'))
+    return values_work_list, values_free_list, errors_work_list, errors_free_list, continue_sign

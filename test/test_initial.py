@@ -8,7 +8,7 @@ from helper import run, config, tmp_environ
 from pairef.preparation import create_workdir, which
 
 
-RES_SHELLS_GOOD = "1.9,1.8,1.7,1.6,1.5,1.4"
+RES_SHELLS_GOOD = "1.55,1.50,1.45,1.40,1.35,1.30"
 
 prog = 'cctbx.python -m pairef'
 help = \
@@ -38,7 +38,7 @@ def test_no_args(tmp_environ):
 
 def test_file_not_exists(tmp_environ):
     cp = run("--HKLIN " + str(config("foo.mtz")) + ""
-             " --XYZIN " + str(config("lysozyme_arp_model_2A.pdb")) + ""
+             " --XYZIN " + str(config("mdm2_1-60A.pdb")) + ""
              " -i 2" + ""
              " -r " + RES_SHELLS_GOOD + ""
              " -p file_not_exists")
@@ -103,8 +103,8 @@ def test_invalid_res_shells_setting(tmp_environ,
         # Preparation - clean rests from previously examined test that
         # has been interrupted
         shutil.rmtree("pairef_bad_res_shells_setting")
-    cp = run("--HKLIN " + str(config("lysozyme_l3600s_1-4A.mtz")) + ""
-             " --XYZIN " + str(config("lysozyme_arp_model_2A.pdb")) + ""
+    cp = run("--HKLIN " + str(config("mdm2_merged.mtz")) + ""
+             " --XYZIN " + str(config("mdm2_1-60A.pdb")) + ""
              " -i " + res_init + ""
              " -r " + res_shells + ""
              " -p bad_res_shells_setting" + ""
@@ -119,9 +119,9 @@ def test_valid_args(tmp_environ):
         # Preparation - clean rests from previously examined test that
         # has been interrupted
         shutil.rmtree("pairef_valid_args")
-    arguments = "--HKLIN " + str(config("lysozyme_l3600s_1-4A.mtz")) + \
-        " --XYZIN " + str(config("lysozyme_arp_model_2A.pdb")) + \
-        " -i 2" + \
+    arguments = "--HKLIN " + str(config("mdm2_merged.mtz")) + \
+        " --XYZIN " + str(config("mdm2_1-60A.pdb")) + \
+        " -i 1.6" + \
         " -r " + RES_SHELLS_GOOD + \
         " -p valid_args" + \
         " -t"
@@ -142,34 +142,32 @@ Command line arguments: """ + arguments + """
 
 Program has been executed with following input parameters:
 """
-    expected_stdout_2 += " * XYZIN: " + str(os.path.dirname(__file__)) + "/" \
-        "fixtures/lysozyme_arp_model_2A.pdb\n"
-    expected_stdout_2 += " * HKLIN: " + str(os.path.dirname(__file__)) + "/" \
-        "fixtures/lysozyme_l3600s_1-4A.mtz\n"
+    expected_stdout_2 += " * XYZIN: " + str(config("mdm2_1-60A.pdb")) + "\n"
+    expected_stdout_2 += " * HKLIN: " + str(config("mdm2_merged.mtz")) + "\n"
     expected_stdout_2 += """ * Project name: valid_args
- * Resolution shells: 1.9,1.8,1.7,1.6,1.5,1.4
+ * Resolution shells: 1.55,1.50,1.45,1.40,1.35,1.30
  * Light-testing mode (REFMAC5 will not be executed).
 
 """
     expected_stdout_2 += "Resolution of the merged diffraction data " + \
-        str(os.path.dirname(__file__)) + "/" \
-        "fixtures/lysozyme_l3600s_1-4A.mtz: 39.35-1.40 A"
+        str(config("mdm2_merged.mtz")) + ": 61.93-1.25 A"
     expected_stdout_2 += """
-Manual setting of initial high resolution limit will be used: 2.00 A.
-High resolution diffraction limits: 1.90 A, 1.80 A, 1.70 A, 1.60 A, 1.50 A, 1.40 A
+Manual setting of initial high resolution limit will be used: 1.60 A.
+High resolution diffraction limits: 1.55 A, 1.50 A, 1.45 A, 1.40 A, 1.35 A, 1.30 A
 """
     expected_stdout_2 += \
         " * Data with FreeRflag set 0 will be excluded during refinement.\n"
-    expected_stdout_2 += "\n"
-    expected_stdout_2 += "Current working directory: " \
-        "" + tempfile.gettempdir() + "/pairef_valid_args\n"
-    expected_stdout_2 += \
-        "------> RESULTS AND THE CURRENT STATUS OF CALCULATIONS ARE LISTED" \
-        " IN A HTML LOG FILE " + tempfile.gettempdir() + \
-        "/pairef_valid_args/PAIREF_valid_args.html\n\n"
+    # expected_stdout_2 += "\n"
+    # expected_stdout_2 += "Current working directory: " \
+    #     "" + tempfile.gettempdir() + "/pairef_valid_args\n"
+    # expected_stdout_2 += \
+    #     "------> RESULTS AND THE CURRENT STATUS OF CALCULATIONS ARE LISTED" \
+    #     " IN A HTML LOG FILE " + tempfile.gettempdir() + \
+    #     "/pairef_valid_args/PAIREF_valid_args.html\n\n"
     stdout_all = cp.stdout.splitlines(True)
     stdout_1 = "".join(stdout_all[:6])
-    stdout_2 = "".join(stdout_all[9:])
+    stdout_2 = "".join(stdout_all[9:-4])
+    # stdout_2 = "".join(stdout_all[9:])
     assert stdout_1 == expected_stdout_1
     assert stdout_2 == expected_stdout_2
     assert os.path.isdir("pairef_valid_args")
