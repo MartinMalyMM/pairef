@@ -1246,12 +1246,10 @@ def suggest_cutoff(args, shells, n_bins_low, flag):
         if max(rating[i]) >= 7:
             accepted[i][1] = False
         elif max(rating[i]) < 7:
-            accepted[i][1] = True
-            cutoff[1] = shell
-            if i != 0 and not accepted[i - 1][1] and max(rating[i - 1]) > 7:
+            if i >= 2 and not accepted[i - 1][1] and not accepted[i - 2][1]:
                 accepted[i][1] = False
                 reason[i].insert(0, reason_phrase_bad_previous)
-            if i >= 2 and not accepted[i - 1][1] and not accepted[i - 2][1]:
+            elif i != 0 and not accepted[i - 1][1] and max(rating[i - 1]) > 7:
                 accepted[i][1] = False
                 reason[i].insert(0, reason_phrase_bad_previous)
             elif i != 0 and not accepted[i - 1][1] and max(rating[i - 1]) == 7:
@@ -1293,6 +1291,9 @@ def suggest_cutoff(args, shells, n_bins_low, flag):
                 else:
                     accepted[i][1] = False
                     reason[i].insert(0, reason_phrase_bad_previous)
+            else:
+                accepted[i][1] = True
+                cutoff[1] = shell
     with open("PAIREF_cutoff.txt", "w") as f:
         f.write(twodec(cutoff[0]))
     # print(twodec(cutoff[0]), twodec(cutoff[1]))

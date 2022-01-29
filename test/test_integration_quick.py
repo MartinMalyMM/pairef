@@ -12,19 +12,23 @@ from pairef import __version__
 
 if "CCP4" in os.environ:
     if platform.python_version_tuple()[0] == "3":  # CCP4 8
-        python_path = "python" + str(platform.python_version_tuple()[0]) + \
-            "." + str(platform.python_version_tuple()[1])
-        hklin_unmerged = os.path.join(os.environ.get("CCP4"), "lib",
-            python_path, "site-packages/ccp4i2/demo_data/mdm2/mdm2_unmerged.mtz")
+        import sysconfig
+        site_packages = (sysconfig.get_path('purelib'))
+        demo_data = os.path.join(site_packages, 'ccp4i2', 'demo_data')
+        hklin_unmerged = os.path.join(demo_data, "mdm2", "mdm2_unmerged.mtz")
+        # python_path = "python" + str(platform.python_version_tuple()[0]) + \
+        #     "." + str(platform.python_version_tuple()[1])
+        # hklin_unmerged = os.path.join(os.environ.get("CCP4"), "lib",
+        #     python_path, "site-packages/ccp4i2/demo_data/mdm2/mdm2_unmerged.mtz")
     elif platform.python_version_tuple()[0] == "2":  # CCP4 7
         hklin_unmerged = os.path.join(os.environ.get("CCP4"),
             "share/ccp4i2/demo_data/mdm2/mdm2_unmerged.mtz")
 
 dir_project = "pairef_test_quick_mdm2"
 if which("refmac5") and os.path.isfile(hklin_unmerged):
-    print("\nPerforming a quick integration test using mdm2 demo data"
-          ", please wait...\n")
     def test_integration_quick_mdm2(tmp_environ):
+        print("\nPerforming a quick integration test using mdm2 demo data"
+              ", please wait...\n")
         if os.path.isdir(dir_project):
             # Preparation - clean rests from previously examined test that
             # has been interrupted
