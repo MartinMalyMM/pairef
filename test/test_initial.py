@@ -193,7 +193,7 @@ def test_create_workdir(tmp_environ):
 
 
 def test_which():
-    result = which("python")
+    result = bool(which("python") or which("python3"))
     assert result
     result = which("ThisCommandShouldNotExist")
     assert not result

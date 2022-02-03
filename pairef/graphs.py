@@ -388,14 +388,15 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
             values_list = []
             if statistic == "Rfree_cyc":
                 values_column = 2  # for refmac
-                values_range = (20, 26)  # for phenix
+                # values_range = (20, 26)  # for phenix
                 values_label = r'$\it{R}_\mathrm{free}$'
                 color = "#6AADE4"
             else:  # Rwork
                 values_column = 1  # for refmac
-                values_range = (13, 18)  # for phenix
+                # values_range = (13, 18)  # for phenix
                 values_label = r'$\it{R}_\mathrm{work}$'
                 color = "#0065BD"
+                
             prefix = project + "_R" + str(flag).zfill(2) + "_" + \
                     twodecname(shells[-1]) + "A"
             if refinement == "refmac":
@@ -428,11 +429,18 @@ def matplotlib_line(shells, project, statistics, n_bins_low, title, flag=0,
                                      "Statistics could not be found.\n"
                                      "Aborting.\n")
                     sys.exit(1)
+                offset = 0
+                while lines[j][offset] != ":":
+                    offset = offset + 1
+                if statistic == "Rwork_cyc":
+                    values_range = (offset + 2, offset + 8)
+                elif statistic == "Rfree_cyc":
+                    values_range = (offset + 9, offset + 15)
                 while lines[j].split()[-1][-1] != '-':  # until hline ---------
                     values_list.append(float(
                         lines[j][values_range[0]:values_range[1]]))
                     if not len(xticklabels_list) == len(xshell_list):
-                        xticklabel = lines[j][0:11]
+                        xticklabel = lines[j][:offset]
                         xticklabel.strip()
                         xticklabels_list.append(xticklabel)
                     j = j + 1

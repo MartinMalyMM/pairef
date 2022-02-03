@@ -341,13 +341,19 @@ def refinement_phenix(res_cur,
     """
     prefix = args.project + "_R" + str(flag).zfill(2) + "_" \
         "" + twodecname(res_cur) + "A"
+    if mode == "refine":
+        xyzin = args.project + "_R" + str(flag).zfill(2) + "_" + \
+            twodecname(res_prev) + "A_001" + settings["pdbORmmcif"]
+    elif mode == "comp" or mode == "prev_pair":
+        xyzin = args.project + "_R" + str(flag).zfill(2) + "_" + \
+            twodecname(res_cur) + "A_001" + settings["pdbORmmcif"]
     com = "refinement.input.xray_data.high_resolution=" + twodec(res_high)
     if res_low:
         com += "\nrefinement.input.xray_data.low_resolution=" + twodec(res_low)
     if args.defin:
         with open(args.defin, "r") as deffile:
             deff = deffile.read()
-            if not any(["number_of_macro_cycles" in line for line in deff.splitlines()]) \
+            if not any(["number_of_macro_cycle" in line for line in deff.splitlines()]) \
                and not args.ncyc:
                 args.ncyc = 3
 
@@ -379,7 +385,7 @@ def refinement_phenix(res_cur,
                     str(args.prerefinement_ncyc)
             elif args.ncyc:
                 com += "\nrefinement.main.number_of_macro_cycles=" + str(args.ncyc)
-            elif not args.comin:
+            elif not args.defin:
                 com += "\nrefinement.main.number_of_macro_cycles=6"
         else:
             if args.prerefinement_ncyc:
@@ -400,12 +406,22 @@ def refinement_phenix(res_cur,
         ncyc_not_zero = True
         if args.ncyc:
             com += "\nrefinement.main.number_of_macro_cycles=" + str(args.ncyc)
-        elif not args.comin:
+        elif not args.defin:
             com += "\nrefinement.main.number_of_macro_cycles=3"
         if args.quick:
             com += "\nrefinement.main.number_of_macro_cycles=1"
+    com += "\nrefinement.gui.base_output_dir=None"
+    com += "\nrefinement.gui.tmp_dir=None"
+    com += "\nrefinement.gui.notify_email=None"
     com += "\nrefinement.output.n_resolution_bins=" + str(n_bins)
     com += "\nrefinement.output.prefix=" + prefix
+    com += "\nrefinement.output.serial=None"
+    com += "\nrefinement.output.serial_format='%03d'"
+    # com += "\nrefinement.input.pdb.filename=" + xyzin
+    # com += "\nrefinement.input.xray_data.filename=" + args.hklin
+    # com += "\nrefinement.input.xray_data.r_free_flags.filename=" + args.hklin
+    # com += "\nrefinement.input.monomers.file_name=None"
+    # com += "\nrefinement.input.sequence.file_name=None"
     com += "\nrefinement.input.xray_data.r_free_flags.test_flag_value=" + \
         str(flag)
     if hasattr(args, "label"):  # always false for the very first mode="refine"
@@ -422,12 +438,6 @@ def refinement_phenix(res_cur,
     geoout = prefix + "_001.geo"
     outout = prefix + "_001.out"
     params = prefix + "_001.params"
-    if mode == "refine":
-        xyzin = args.project + "_R" + str(flag).zfill(2) + "_" + \
-            twodecname(res_prev) + "A_001" + settings["pdbORmmcif"]
-    elif mode == "comp" or mode == "prev_pair":
-        xyzin = args.project + "_R" + str(flag).zfill(2) + "_" + \
-            twodecname(res_cur) + "A_001" + settings["pdbORmmcif"]
     command = ["phenix.refine", args.hklin, xyzin]
     if args.libin:
         command.append(args.libin)
@@ -458,6 +468,10 @@ def refinement_phenix(res_cur,
                         labels_all + " . Automatically choosing "
                         "refinement.input.xray_data.labels=" + label)
                     args.label = label  # a bit dirty hack but it works
+                    if os.path.isfile(logout):
+                        os.rename(logout, prefix + "_001_warning.log")
+                    if os.path.isfile(outout):
+                        os.rename(outout, prefix + "_001_warning.out")
                     results = refinement_phenix(res_cur=res_cur,
                                                 res_prev=res_prev,
                                                 res_high=res_high,

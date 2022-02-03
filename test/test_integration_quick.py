@@ -100,7 +100,6 @@ High resolution diffraction limits: 1.55 A, 1.50 A
        Using labels=I,SIGI
 
 Suggested cutoff: 
-1.60 A
 """
         stdout_all = cp.stdout.splitlines(True)
         assert "Preliminary suggested cutoff:" in stdout_all[43]
@@ -109,10 +108,11 @@ Suggested cutoff:
         stdout_all[51] = "       Preliminary suggested cutoff: 1.XX A\n"
         stdout_1 = "".join(stdout_all[:7])
         stdout_2 = "".join(stdout_all[9:27])
-        stdout_3 = "".join(stdout_all[32:58])
+        stdout_3 = "".join(stdout_all[32:57])
         assert stdout_1 == expected_stdout_1
         assert stdout_2 == expected_stdout_2
         assert stdout_3 == expected_stdout_3
+        assert "1.60 A" in stdout_all[57]
 
         assert os.path.isdir(dir_project)
         os.chdir(dir_project)
@@ -126,10 +126,11 @@ Suggested cutoff:
         print("STDOUT:\n" + cp.stdout)
         stdout_log_1 = "".join(stdout_log[:7])
         stdout_log_2 = "".join(stdout_log[9:27])
-        stdout_log_3 = "".join(stdout_log[32:58])
+        stdout_log_3 = "".join(stdout_log[32:57])
         assert stdout_log_1 == expected_stdout_1
         assert stdout_log_2 == expected_stdout_2
         assert stdout_log_3 == expected_stdout_3
+        assert "1.60 A" in stdout_log[57]
 
         files_out = \
             ["mdm2_1-60A.pdb",

@@ -996,13 +996,13 @@ def main(args):
                             statistics=["CCwork", "CC*"],
                             n_bins_low=n_bins_low,
                             title=r"CC$_\mathrm{work}$",
-                            filename_suffix="CCwork")
+                            filename_suffix="CCwork", flag=flag)
             matplotlib_line(shells=shells_ready_with_res_init,
                             project=args.project,
                             statistics=["CCfree", "CC*"],
                             n_bins_low=n_bins_low,
                             title=r"CC$_\mathrm{free}$",
-                            filename_suffix="CCfree")
+                            filename_suffix="CCfree", flag=flag)
         cutoff, accepted, reason = suggest_cutoff(
             args, shells, n_bins_low, flag)
         write_log_html(shells, shells, args, versions_dict, flag_sets,

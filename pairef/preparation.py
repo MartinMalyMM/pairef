@@ -256,7 +256,6 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
     elif refinement == "phenix":
         from iotbx.reflection_file_reader import any_reflection_file
         from iotbx import mtz
-        import io
         tool = "CCTBX"
         # 1. get n_i_obs_low using CCTBX
         n_i_obs_low_list = []
@@ -273,8 +272,14 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
         n_i_obs_low = min(n_i_obs_low_list)
         # 2. get n_flag_sets using CCTBX
         mtz_object = mtz.object(file_name=args.hklin)
-        out = io.StringIO()
-        mtz_object.show_summary(out=out)
+        try:  # Python 3
+            import io
+            out = io.StringIO()
+            mtz_object.show_summary(out=out)
+        except TypeError:  # Python 2.7 (CCP4 7, Phenix 1.20)
+            import cStringIO
+            out = cStringIO.StringIO()
+            mtz_object.show_summary(out=out)
         out = out.getvalue()
         out_lines = out.splitlines()
         for i in range(len(out_lines)):
