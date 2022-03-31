@@ -5,6 +5,7 @@ import os
 import signal
 import webbrowser
 import platform
+import locale
 try:
     from PyQt4.QtGui import *
     from PyQt4.QtCore import *
@@ -23,13 +24,19 @@ except ImportError:
 
 
 class MyWindow(QWidget):
-    """PAIREF graphical interface (in PyQt)"""
+    """PAIREF graphical interface (in PySide2 or PyQt4)"""
     def __init__(self):
         super(MyWindow, self).__init__()
         # Allow to term the app pressing Ctrl+C in console
         signal.signal(signal.SIGINT, signal.SIG_DFL)
-        # locale.setlocale(locale.LC_ALL, "en_US.UTF-8")  useless
-        # QLocale.setDefault(QLocale(QLocale.English, QLocale.UnitedStates))
+        # locale.setlocale(locale.LC_ALL, "en_US.UTF-8")  # can cause problems
+        try:
+            QLocale.setDefault(QLocale("en_US"))  # to set decimal point
+        except:
+            sys.stderr.write(
+                "WARNING: Locales were not able to be set to en_US."
+                "You may have problems relating to decimal point/comma "
+                "setting.")
         self.myInit()
 
     def myInit(self):
@@ -452,13 +459,16 @@ QLineEdit#required {
         QLine.setText(filename)
 
     def checkfile(self):
-        try:
-            if os.path.isfile(self.sender().text()):
-                self.sender().setStyleSheet("background-color: lightgreen;")
-            else:
+        if str(self.sender().text()).strip():
+            try:
+                if os.path.isfile(self.sender().text()):
+                    self.sender().setStyleSheet("background-color: lightgreen;")
+                else:
+                    self.sender().setStyleSheet("background-color: red;")
+            except UnicodeDecodeError:
                 self.sender().setStyleSheet("background-color: red;")
-        except UnicodeDecodeError:
-            self.sender().setStyleSheet("background-color: red;")
+        else:
+            self.sender().setStyleSheet("background-color: white;")
 
     def checkweight(self):
         weight = str(self.weight.text())
