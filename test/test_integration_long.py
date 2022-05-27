@@ -63,7 +63,7 @@ if which("refmac5"):
             #    print("trying alt")
             #    filename, log = urllib_wget(url_prefix_alt + f, f)
             assert os.path.isfile(f)
-        if "TL" in project:
+        if "TL_cif" in project:
             filename, log = urllib_wget(
                 "https://pairef.fjfi.cvut.cz/docs/publication_examples/3-2_TL/pairef_TL_step0-10A/"
                 "AUTOMATIC_DEFAULT_scaled_unmerged.mtz",
