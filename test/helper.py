@@ -18,14 +18,21 @@ def run(line, **kwargs):
     # except KeyError:
     #     # print("Normal testing mode.")
     #     pass
+    if sys.platform == 'win32':
+        posix_bool = False
+        shell_bool = True
+    else:
+        posix_bool = True
+        shell_bool = False
     print('\n$ cctbx.python -m pairef', line)
     # print('\n$ python -m', MODULE, line)
-    command = ["cctbx.python", '-m', "pairef"] + shlex.split(line)
+    command = ["cctbx.python", '-m', "pairef"] + shlex.split(line, posix=posix_bool)
     # return subprocess.run(command,
     process = subprocess.Popen(command,
                                stdout=subprocess.PIPE,
                                stderr=subprocess.PIPE,
                                universal_newlines=True,
+                               shell=shell_bool,
                                **kwargs)
     cp = AttrDict()
     cp.stdout, cp.stderr = process.communicate()

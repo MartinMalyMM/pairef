@@ -208,10 +208,6 @@ def process_arguments(input_args):
         "only for REFMAC5)",
         type=check_positive_int)
     group2.add_argument(
-        '--TLSIN-keep', "--tlsin-keep", dest='tlsin_keep',
-        help="keep using the same TLS input file in all the refinement runs "
-        "(only for REFMAC5)", action='store_true')
-    group2.add_argument(
         "--open-browser", action="store_true", dest='open_browser',
         help="open web browser to show results "
         "(requires to be executed as ccp4-python, not as cctbx.python)")
@@ -380,14 +376,14 @@ def process_arguments(input_args):
                      "an option --comin instead to specify keywords for "
                      "REFMAC5 or set refinement in phenix.refine using an "
                      "option --phenix.")
-    if args.phenix and (args.tlsin or args.tls_ncyc or args.tlsin_keep):
+    if args.phenix and (args.tlsin or args.tls_ncyc):
         parser.error("Specific options for TLS refinement are valid only for "
                      "REFMAC5. For phenix.refine, specify a refinement "
                      "strategy and TLS groups (keywords "
                      "refinement.refine.strategy and refinement.refine.adp) "
                      "in a configuration file (option --def).")
     # TLS
-    if (args.tlsin_keep or args.tls_ncyc) and not args.tlsin:
+    if args.tls_ncyc and not args.tlsin:
         parser.error("Input TLS file must be specified (option --TLSIN) while "
                      "using the options --TLSIN-keep or --TLS-ncyc.")
     return(args)

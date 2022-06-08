@@ -696,9 +696,6 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
             "<td>" + args.libin + "</td></tr>\n"
     if args.tlsin:
         page += "\t\t<tr><td>Input TLS file:</td><td>" + args.tlsin
-        if args.tlsin_keep:
-            page += "(keep using the same TLS input file " \
-                "in all the refinement runs)"
         page += "</td></tr>\n"
     if args.comin:
         page += "\t\t<tr><td>Keywords for REFMAC5:</td>" \

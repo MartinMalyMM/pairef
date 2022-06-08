@@ -87,9 +87,6 @@ def welcome(args, pairef_version):
         print(" * LIBIN: " + args.libin)
     if args.tlsin:
         print(" * TLSIN: " + args.tlsin)
-    if args.tlsin_keep:
-        print("   (keep using the same TLS input file in all the refinement "
-              "runs)")
     print(" * Project name: " + str(args.project))
     # if args.step:
     #     print(" * Resolution step in angstroem: " + str(args.step))

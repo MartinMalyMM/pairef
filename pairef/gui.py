@@ -241,12 +241,8 @@ QLineEdit#required {
         self.free.setValidator(intValidatorPositive)
         self.freeLabel = QLabel("Exclude reflections with free-flag", self)
 
-        self.tlsin_keep = QCheckBox("Keep using the same TLS input file "
-                                    "in all the refinement runs",
-                                    objectName="indent")
-
         tls_widgets = [self.tlsinFileName, self.tlsinButton, self.tls_ncyc,
-                       self.tls_ncycLabel, self.tlsin_keep]
+                       self.tls_ncycLabel]
         for tls_widget in tls_widgets:
             tls_widget.hide()
 
@@ -400,7 +396,6 @@ QLineEdit#required {
         grid_more2.addWidget(self.tlsinFileName, 760, 2)
         grid_more2.addWidget(self.tls_ncycLabel, 761, 0)
         grid_more2.addWidget(self.tls_ncyc, 761, 2)
-        grid_more2.addWidget(self.tlsin_keep, 762, 0, 1, 3)
 
         grid_more2.addWidget(self.completeCheckBox, 950, 0, 1, 3)
         grid_more2.addWidget(self.prerefinementCheckBox, 955, 0, 1, 3)
@@ -487,7 +482,7 @@ QLineEdit#required {
         widgets_refmac_weight = [self.weightLabel, self.weight]
         widgets_refmac_tls = [
             self.tlsinButton, self.tlsinFileName, self.tls_ncycLabel,
-            self.tlsin_keep, self.tls_ncyc]
+            self.tls_ncyc]
         widgets_phenix = [self.defButton, self.defFileName]
         if self.refmacRadio.isChecked():
             self.ncyc.setValue(10)
@@ -530,7 +525,7 @@ QLineEdit#required {
 
     def tls_show_hide(self):
         tls_widgets = [self.tlsinFileName, self.tlsinButton, self.tls_ncyc,
-                       self.tls_ncycLabel, self.tlsin_keep]
+                       self.tls_ncycLabel]
         if self.tlsCheckBox.isChecked():
             for tls_widget in tls_widgets:
                 tls_widget.show()
@@ -628,9 +623,6 @@ QLineEdit#required {
         if self.tls_ncyc.value() and self.tlsCheckBox.isChecked() and \
                 self.refmacRadio.isChecked():
             argms += ["--TLS-ncyc", str(self.tls_ncyc.value())]
-        if self.tlsin_keep.isChecked() and self.tlsCheckBox.isChecked() and \
-                self.refmacRadio.isChecked():
-            argms += ["--TLSIN-keep"]
         if self.completeCheckBox.isChecked():
             argms += ["--complete"]
         if self.prerefinementCheckBox.isChecked():

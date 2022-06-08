@@ -211,15 +211,7 @@ solvent YES
     if args.tlsin:
         if ncyc_not_zero:
             command.append("TLSIN")
-            if args.tlsin_keep:
-                command.append(args.tlsin)
-            else:
-                if mode == "first":
-                    tlsin = args.tlsin
-                elif mode == "refine":
-                    tlsin = args.project + "_R" + str(flag).zfill(2) + "_" + \
-                        twodecname(res_prev) + "A.tlsout"
-                command.append(tlsin)
+            command.append(args.tlsin)
             command.append("TLSOUT")
             tlsout = prefix + ".tlsout"
             command.append(tlsout)
