@@ -1173,12 +1173,15 @@ def collect_stat_OVERALL_AVG(shells, project, flag_sets):
                       "" + Rwork_diff_sem + "       " + Rfree_diff_sem + "\n")
 
     # === Rgap ===
-    Rgap_avg = fourdec(float(Rfree_fin_avg) - float(Rwork_fin_avg))
+    Rgap_fin_avg = fourdec(float(Rfree_fin_avg) - float(Rwork_fin_avg))
     csvfilename_gap = project + "_Rgap.csv"
     if not os.path.isfile(csvfilename_gap):
         with open(csvfilename_gap, "w") as csvfile:
+            Rgap_init_avg = fourdec(float(Rfree_init_avg) - float(Rwork_init_avg))
             csvfile.write("# Resolution   Rwork   Rfree   Rfree-Rwork\n")
+            csvfile.write(twodec(shells[0]) + "          " + Rwork_init_avg + "   "
+                          "" + Rfree_init_avg + "   " + Rgap_init_avg + "\n")
     with open(csvfilename_gap, "a") as csvfile:
         csvfile.write(twodec(shells[-1]) + "          " + Rwork_fin_avg + "   "
-                      "" + Rfree_fin_avg + "   " + Rgap_avg + "\n")
+                      "" + Rfree_fin_avg + "   " + Rgap_fin_avg + "\n")
     return csvfilename, csvfilename_gap
