@@ -203,12 +203,13 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
             * default_shells_definition (*bool*)
     """
     # If the resolution of input model == resolution of diffr. data, abort
-    if twodec(args.res_init) == twodec(res_high_mtz):
-        sys.stderr.write("ERROR: The given input structure model "
-                         "" + args.xyzin + " was refined at the same "
-                         "resolution as the given diffraction data "
-                         "" + args.hklin + " have. Nothing to do."
-                         "\nAborting.\n")
+    if twodec(args.res_init) <= twodec(res_high_mtz):
+        sys.stderr.write(
+            "ERROR: Given input MTZ file " + args.hklin + " contain data "
+            "only up to resolution " + twodec(res_high_mtz) + " A that is "
+            "the same or lower than the initial high-resolution diffraction "
+            "limit " + twodec(args.res_init) + " A. Nothing to do.\n"
+            "Aborting.\n")
         sys.exit(1)
     # Estimation of
     #   1. a number of low resolution bins and

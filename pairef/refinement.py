@@ -1019,7 +1019,8 @@ def calculate_correlation(hkl_calc, hklin,
             i_obs = column
             break
     if not i_obs:
-        print("Error - intensities were not found in " + hklin)  # TO DO
+        warning_my("noI", "Intensities were not found in " + hklin + ". "
+                   "CCwork and CCfree values cannot be calculated.")
         return "N/A", "N/A"
 
     # prepare sftools command and run
