@@ -345,6 +345,10 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
                         "(e.g. 2.1,2.0,1.9).")
                     sys.stderr.write("\nAborting.\n")
                     sys.exit(1)
+        for i in range(len(shells_high)):
+            if twodec(shells_high[i]) <= twodec(res_high_mtz):
+                shells_high = shells_high[:i] + [round(float(res_high_mtz), 2)]
+                break
         if shells_high[0] >= args.res_init:
             sys.stderr.write(
                 "ERROR: Explicit definition of high "
@@ -375,8 +379,16 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
             sys.exit(1)
         shells_high = []
         for i in range(args.n_shells):
-            shells_high.append(args.res_init - (i + 1) * args.step)
-
+            new_shell = args.res_init - (i + 1) * args.step
+            if twodec(new_shell) >= twodec(res_high_mtz):
+                shells_high.append(args.res_init - (i + 1) * args.step)
+            elif i == 0:  # and new_shell < res_high_mtz:
+                shells_high = round(float(twodec(res_high_mtz)), 2)
+                break
+            else:  # i >= 1 and new_shell < res_high_mtz:
+                if twodec(res_high_mtz) != twodec(shells_high[i - 1]):
+                    shells_high.append(round(float(twodec(res_high_mtz)), 2))
+                break
     else:
         # Default setting - 0.05A wide high resolution shells
         shell_width = 0.05
@@ -425,7 +437,14 @@ def def_res_shells(args, refinement, res_high_mtz, res_low=999):
                 # "overcome this problem (option -r).")
             # sys.stderr.write("\nAborting.\n")
             # sys.exit(1)
-
+    if shells_high == []:
+        sys.stderr.write(
+            "ERROR: The given definition of high-resolution shells requires "
+            "more data in high resolution than are available in the given "
+            "input MTZ file " + args.hklin + " that contain data "
+            "only up to resolution " + twodec(res_high_mtz) + " A. Nothing to do.\n"
+            "Aborting.\n")
+        sys.exit(1)
     shells = [args.res_init] + shells_high
     return shells, n_bins_low, n_flag_sets, default_shells_definition
 
