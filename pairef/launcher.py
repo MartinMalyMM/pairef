@@ -267,6 +267,9 @@ def process_arguments(input_args):
         "cross-validation protocol", action='store_true')
 
     parser.add_argument(
+        '--ccp4cloud', dest='ccp4cloud', help=argparse.SUPPRESS,
+        action='store_true')
+    parser.add_argument(
         '-t', dest='test', help=argparse.SUPPRESS, action='store_true')
     parser.add_argument(
         '-q', dest='quick', help=argparse.SUPPRESS, action='store_true')

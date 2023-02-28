@@ -117,7 +117,7 @@ solvent YES
         com += "\n refi reso " + reso + " \n"
         if not any(["ncyc" in line.lower() for line in com.splitlines()]) \
            and not args.ncyc:
-            args.ncyc = 10
+            args.ncyc = 20
     prefix = args.project + "_R" + str(flag).zfill(2) + "_" \
         "" + twodecname(res_cur) + "A"
     if mode == "comp":
@@ -166,7 +166,7 @@ solvent YES
         if args.ncyc:
             com += "\n ncyc " + str(args.ncyc)
         elif not args.comin:
-            com += "\n ncyc 10"
+            com += "\n ncyc 20"
         if args.quick:
             com += "\n ncyc 1"
     if bfac_set:

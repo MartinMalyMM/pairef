@@ -82,6 +82,7 @@ def test_write_log_html(tmp_environ):
     args.set_bfactor = None
     args.shake_sites = None
     args.constant_grid = None
+    args.ccp4cloud = None
     shutil.copy2(config("A_R-values.csv"), tempfile.gettempdir())
     shells_ready_with_res_init = (1.8, 1.7, 1.6)
     shells = (1.8, 1.7, 1.6, 1.5)

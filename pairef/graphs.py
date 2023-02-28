@@ -612,6 +612,7 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
 
     page = """<!DOCTYPE html>
 <head>
+    <meta charset="utf-8">
     <title>PAIREF - results """ + args.project + """</title>
     <link rel="stylesheet" type="text/css" href="styles.css">\n"""
     if not done:
@@ -651,8 +652,8 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
         if cutoff[0] == cutoff[1]:
             page += twodec(cutoff[0])
         else:
-            page += "strict: " + twodec(cutoff[0]) + " A; benevolent: "  + twodec(cutoff[1])
-        page += " A</h2>\n"
+            page += "strict: " + twodec(cutoff[0]) + " &#8491;; benevolent: "  + twodec(cutoff[1])
+        page += " &#8491;</h2>\n"
         page += "\t\t<table class='suggestion'>\n"
         page += "\t\t<tr><th>Shell</th><th>Accepted?</th><th>Reason</th></tr>\n"
         for i, shell in enumerate(ready_shells[1:]):
@@ -665,7 +666,7 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
             else:  # elif accepted[i][0]:
                 page += "\t\t<tr class='accepted'>\n"
             page += "\t\t\t<td>"
-            page += twodec(shells[i]) + "-" + twodec(shell) + " A</td>\n"
+            page += twodec(shells[i]) + "-" + twodec(shell) + " &#8491;</td>\n"
             page += "\t\t\t<td>"
             if accepted[i][0]:
                 page += "Yes"
@@ -788,11 +789,15 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
             page += '\t<h2>Overall values</h2>\n'
             page = warning_orangebox(["overall_R"], page)
             page += '\t\t<div class="wrap">\n'
-            page += '\t\t\t<div class="column">\n'
-            page += '\t\t\t\t<a href="' + args.project + '_R-values.png">'
+            page += '\t\t\t<div class="column">\n\t\t\t\t'
+            if not args.ccp4cloud:
+                page += '<a href="' + args.project + '_R-values.png">'
             page += '<img src="' + args.project + '_R-values.png' \
                 '?shell=' + twodecname(ready_shells[-1]) + '" ' \
                 'alt="R-values"></a><br />\n'
+            if not args.ccp4cloud:
+                page += '</a>'
+            page += '<br />\n'
             page += '\t\t\t\tRaw data: <a href="' + args.project + '' \
                 '_R-values.csv">' + args.project + '_R-values.csv' \
                 '</a><br />\n'
@@ -807,11 +812,15 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
                 page += ' Standard error of mean is shown in orange.'
             page += '</p>\n'
             page += '\t\t\t</div>\n'
-            page += '\t\t\t<div class="column">\n'
-            page += '\t\t\t\t<a href="' + args.project + '_Rgap.png">' \
-                '<img src="' + args.project + '_Rgap.png' \
+            page += '\t\t\t<div class="column">\n\t\t\t\t'
+            if not args.ccp4cloud:
+                page += '<a href="' + args.project + '_Rgap.png">'
+            page += '<img src="' + args.project + '_Rgap.png' \
                 '?shell=' + twodecname(ready_shells[-1]) + '" ' \
-                'alt="Rgap"></a><br />\n'
+                'alt="Rgap">'
+            if not args.ccp4cloud:
+                page += '</a>'
+            page += '<br />\n'
             page += '\t\t\t\tRaw data: <a href="' \
                 '' + args.project + '_Rgap.csv">' + args.project + '' \
                 '_Rgap.csv</a>\n'
@@ -822,14 +831,18 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
             page += '\t\t</div>\n'
 
             if args.complete_cross_validation:
-                for shell in ready_shells[1:]:  # exclude the initial difr. l.
-                    page += '\t\t<a href="' + args.project + '_R-values_com' \
-                        'plete_' + twodecname(shell) + 'A.png">' \
-                        '<img src="' + args.project + '_R-values_complete' \
+                for shell in ready_shells[1:]:  # exclude the initial diffr. l.
+                    page += '\t\t'
+                    if not args.ccp4cloud:
+                        page += '<a href="' + args.project + '_R-values_complete_' + twodecname(shell) + 'A.png">'
+                    page += '<img src="' + args.project + '_R-values_complete' \
                         '_' + twodecname(shell) + 'A.png' \
                         '?shell=' + twodecname(shell) + '' \
                         '" alt="R-values (complete cross-validation, ' \
-                        '' + twodec(shell) + ' A)"></a>\n'
+                        '' + twodec(shell) + ' A)">'
+                    if not args.ccp4cloud:
+                        page += '</a>'
+                    page += '<br />\n'
 
         # "Rfree", "CCfree", "Rwork", "CCwork", "No_work_free_refl." graphs
         if not args.complete_cross_validation:
@@ -845,11 +858,15 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
             for i, graph in enumerate(graphs):
                 pngfilename = args.project + "_" + graph + ".png"
                 if os.path.isfile(pngfilename):
-                    page += '\t\t<a href="' + args.project + '_' + graph + '' \
-                        '.png">' \
-                        '<img src="' + args.project + '_' + graph + '.png' \
+                    page += '\t\t'
+                    if not args.ccp4cloud:
+                        page += '<a href="' + args.project + '_' + graph + '.png">'
+                    page += '<img src="' + args.project + '_' + graph + '.png' \
                         '?shell=' + twodecname(ready_shells[-1]) + '' \
-                        '" alt="' + graph + '"></a>\n'
+                        '" alt="' + graph + '">'
+                    if not args.ccp4cloud:
+                        page += '</a>'
+                    page += '\n'
                 if i % 2 == 1:  # Display max. 2 graphs in row
                     page += "\t\t<br />\n"
             # Link to raw data
@@ -866,21 +883,29 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
             graph = "No_work_free_reflections"
             pngfilename = args.project + "_" + graph + ".png"
             if os.path.isfile(pngfilename):
-                page += '\t\t<a href="' + args.project + '_' + graph + '' \
-                    '.png">' \
-                    '<img src="' + args.project + '_' + graph + '.png' \
+                page += '\t\t'
+                if not args.ccp4cloud:
+                    page += '<a href="' + args.project + '_' + graph + '.png">'
+                page += '<img src="' + args.project + '_' + graph + '.png' \
                     '?shell=' + twodecname(ready_shells[-1]) + '' \
-                    '" alt="' + graph + '"></a>\n'
+                    '" alt="' + graph + '">'
+                if not args.ccp4cloud:
+                    page += '</a>'
+                page += '\n'
 
     # Optical resolution
     pngfilename = args.project + "_Optical_resolution.png"
     csvfilename = args.project + "_Optical_resolution.csv"
     if os.path.isfile(pngfilename):
         page += "\t<h2>Optical resolution</h2>\n"
-        page += '\t\t<a href="' + pngfilename + '">' \
-            '<img src="' + pngfilename + \
+        if not args.ccp4cloud:
+            page += '\t\t<a href="' + pngfilename + '">'
+        page += '<img src="' + pngfilename + \
             '?shell=' + twodecname(ready_shells[-1]) + '" ' \
-            'alt="Optical resolution"></a><br />\n'
+            'alt="Optical resolution">'
+        if not args.ccp4cloud:
+            page += '</a>'
+        page += '<br />\n'
         page += '\t\tRaw data: <a href="' + csvfilename + '">' + \
             csvfilename + '</a>\n'
 
@@ -893,10 +918,14 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
         warning_keys = ["merging_stats", "CC*"]
         page = warning_orangebox(warning_keys, page)
         for graph in graphs:
-            page += '\t\t<a href="' + args.project + '_' + graph + '' \
-                '.png">' \
-                '<img src="' + args.project + '_' + graph + '.png" alt="' \
-                '' + graph + '"></a>\n'
+            page += '\t\t'
+            if not args.ccp4cloud:
+                page += '<a href="' + args.project + '_' + graph + '.png">'
+            page += '<img src="' + args.project + '_' + graph + '.png" alt="' \
+                '' + graph + '">'
+            if not args.ccp4cloud:
+                page += '</a>'
+            page += '\n'
         page += '\t\t<p>Raw data: <a href="' + args.project + '' \
             '_merging_stats.csv">' \
             '' + args.project + '_merging_stats.csv</a></p>\n'
@@ -929,10 +958,15 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
                     ciffilename = prefix + '.mmcif'
                 if os.path.isfile(pngfilename):
                     page += '\t\t\t<div class="column">\n'
-                    page += '\t\t\t\t<a href="' + pngfilename + '">' \
-                        '<img src="' + pngfilename + '" alt="' \
+                    page += '\t\t\t\t'
+                    if not args.ccp4cloud:
+                        page += '<a href="' + pngfilename + '">'
+                    page += '<img src="' + pngfilename + '" alt="' \
                         '' + twodec(shell) + 'A statistics vs. cycle, ' \
-                        'flag ' + str(flag).zfill(2) + '"></a><br />\n'
+                        'flag ' + str(flag).zfill(2) + '">'
+                    if not args.ccp4cloud:
+                        page += '</a>'
+                    page += '<br />\n'
                     page += '\t\t\t\t<a href="' + logfilename + '">' \
                         'Log file</a> from refinement at ' \
                         '' + twodec(shell) + ' &#8491;<br />\n'
@@ -974,8 +1008,12 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
 </html>"""
 
     htmlfilename = "PAIREF_" + args.project + ".html"
-    with open(htmlfilename, "w") as htmlfile:
-        htmlfile.write(page)
+    if int(platform.python_version_tuple()[0]) == 2:
+        with open(htmlfilename, "w") as htmlfile:
+            htmlfile.write(page)
+    else:  # Python 3
+        with open(htmlfilename, "w", encoding="utf-8") as htmlfile:
+            htmlfile.write(page)
 
     # Styles
     cssfilepath = str(os.path.dirname(os.path.abspath(__file__))) + \
