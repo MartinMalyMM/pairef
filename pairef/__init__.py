@@ -3,4 +3,4 @@ from .launcher import run_pairef
 
 
 __all__ = ['run_pairef']
-__version__ = '1.3.12'
+__version__ = '1.3.13'

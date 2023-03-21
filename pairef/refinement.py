@@ -1049,10 +1049,10 @@ def calculate_correlation(hkl_calc, hklin,
     CCfree = None
     output_lines = output.splitlines()
     for i in range(len(output.splitlines())):
-        if "WARNING" in output.splitlines()[i]:
-            print(output.splitlines()[i])
-            return "N/A", "N/A"
-        elif " $TABLE: Correlation vs. resolution:" in output.splitlines()[i] and \
+        # if "WARNING" in output.splitlines()[i]:
+        #     print(output.splitlines()[i]) #####
+        #     # return "N/A", "N/A"
+        if " $TABLE: Correlation vs. resolution:" in output.splitlines()[i] and \
                 "$$" in output.splitlines()[i + 2] and \
                 "$$" in output.splitlines()[i + 4] and \
                 "$$" in output.splitlines()[i + 6] and \
