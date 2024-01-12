@@ -30,7 +30,7 @@ def xticklabels_compress(list, n_max=13, depth=1):
     """
     if len(list) > 88:
         return list  # long lists cause problems
-    if len([label for label in list if label is not ""]) >= n_max:
+    if len([label for label in list if label != ""]) >= n_max:
         if len(list) % 2 == 0:
             i = int(pow(2, depth - 1) + 1)  # i = 2 in case of depth == 1
             list[1] = ""
@@ -46,7 +46,7 @@ def xticklabels_compress(list, n_max=13, depth=1):
             i = i + 1 * depth
         list[- depth - 1] = ""
     # If it was not enough, do it again, recursively
-    if len([label for label in list if label is not ""]) >= n_max:
+    if len([label for label in list if label != ""]) >= n_max:
         list = xticklabels_compress(list=list, n_max=n_max, depth=2*depth)
     return list
 

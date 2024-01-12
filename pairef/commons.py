@@ -207,12 +207,12 @@ def pick_work_free_from_csv_line(line, values_work_list, values_free_list,
         try:
             errors_work_list.append(float(line.split()[9]))
         except ValueError:
-            errors_work_list.append(float('nan'))            
+            errors_work_list.append(0)            
         try:
             errors_free_list.append(float(line.split()[10]))
         except ValueError:
-            errors_free_list.append(float('nan'))
+            errors_free_list.append(0)
     else:
-        errors_work_list.append(float('nan'))
-        errors_free_list.append(float('nan'))
+        errors_work_list.append(0)
+        errors_free_list.append(0)
     return values_work_list, values_free_list, errors_work_list, errors_free_list, continue_sign
