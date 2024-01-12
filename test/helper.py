@@ -24,9 +24,9 @@ def run(line, **kwargs):
     else:
         posix_bool = True
         shell_bool = False
-    print('\n$ cctbx.python -m pairef', line)
+    print('\n$ ccp4-python -m pairef', line)
     # print('\n$ python -m', MODULE, line)
-    command = ["cctbx.python", '-m', "pairef"] + shlex.split(line, posix=posix_bool)
+    command = ["ccp4-python", '-m', "pairef"] + shlex.split(line, posix=posix_bool)
     # return subprocess.run(command,
     process = subprocess.Popen(command,
                                stdout=subprocess.PIPE,
