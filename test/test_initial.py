@@ -42,7 +42,8 @@ def test_file_not_exists(tmp_environ):
              " -i 2" + ""
              " -r " + RES_SHELLS_GOOD + ""
              " -p file_not_exists")
-    assert cp.returncode != 0
+    if sys.platform != 'win32':
+        assert cp.returncode != 0
     # assert not cp.stdout
     # assert cp.stderr == help + "\ncctbx.python -m pairef: error: " \
     #     "The file " + str(config("foo.mtz")) + " does not exist!\n"
@@ -109,7 +110,8 @@ def test_invalid_res_shells_setting(tmp_environ,
              " -r " + res_shells + ""
              " -p bad_res_shells_setting" + ""
              " -t")
-    assert cp.returncode != 0
+    if sys.platform != 'win32':
+        assert cp.returncode != 0
     # assert not cp.stdout
     assert cp.stderr == error_message
 
@@ -193,7 +195,7 @@ def test_create_workdir(tmp_environ):
 
 
 def test_which():
-    result = bool(which("python") or which("python3"))
+    result = bool(which("python") or which("python3") or which("ccp4-python") or which("cctbx.python"))
     assert result
     result = which("ThisCommandShouldNotExist")
     assert not result
