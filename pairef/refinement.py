@@ -10,6 +10,7 @@ from math import sqrt
 from .settings import warning_dict, settings
 from .commons import twodec, twodecname, fourdec, extract_from_file, warning_my
 from .commons import Popen_my
+from .preparation import which
 
 
 def refinement_refmac(res_cur,
@@ -201,8 +202,12 @@ solvent YES
     elif mode == "comp" or mode == "prev_pair":
         xyzin = args.project + "_R" + str(flag).zfill(2) + "_" + \
             twodecname(res_cur) + "A" + settings["pdbORmmcif"]
-    command = ["refmac5", "HKLIN", args.hklin, "XYZIN", xyzin, "HKLOUT",
-               hklout, "XYZOUT", xyzout, "LIBOUT", libout]
+    if which("refmacat"):
+        refmac_executable = "refmacat"
+    else:
+        refmac_executable = "refmac5"
+    command = [refmac_executable, "HKLIN", args.hklin, "XYZIN", xyzin,
+               "HKLOUT", hklout, "XYZOUT", xyzout, "LIBOUT", libout]
     # Optional LIBIN
     if args.libin:
         command.append("LIBIN")
@@ -238,7 +243,7 @@ solvent YES
         prefix_copy = prefix + "_comparison_at_" + twodecname(res_high) + "A"
         shutil.copy2(logout, prefix_copy + ".log")
         shutil.copy2(hklout, prefix_copy + ".mtz")
-    version = extract_from_file(logout, "version", 0, 1, nth_word=5,
+    version = extract_from_file(logout, "  version", 0, 1, nth_word=5,
                                 get_first=True)
     results = {"HKLOUT": hklout, "XYZOUT": xyzout, "LOGOUT": logout,
                "version": version}

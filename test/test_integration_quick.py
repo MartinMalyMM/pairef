@@ -25,7 +25,7 @@ if "CCP4" in os.environ:
             "share/ccp4i2/demo_data/mdm2/mdm2_unmerged.mtz")
 
 dir_project = "pairef_test_quick_mdm2"
-if which("refmac5") and os.path.isfile(hklin_unmerged):
+if (which("refmac5") or which("refmacat")) and os.path.isfile(hklin_unmerged):
     def test_integration_quick_mdm2(tmp_environ):
         print("\nPerforming a quick integration test using mdm2 demo data"
               ", please wait...\n")
@@ -82,7 +82,7 @@ High resolution diffraction limits: 1.55 A, 1.50 A
 
    * Refining using data up to 1.55 A resolution...
        Running command:
-       refmac5 HKLIN mdm2_merged.mtz XYZIN test_quick_mdm2_R00_1-60A.pdb HKLOUT test_quick_mdm2_R00_1-55A.mtz XYZOUT test_quick_mdm2_R00_1-55A.pdb LIBOUT test_quick_mdm2_R00_1-55A.cif
+       refmacat HKLIN mdm2_merged.mtz XYZIN test_quick_mdm2_R00_1-60A.pdb HKLOUT test_quick_mdm2_R00_1-55A.mtz XYZOUT test_quick_mdm2_R00_1-55A.pdb LIBOUT test_quick_mdm2_R00_1-55A.cif
        Calculating statistics of the refined structure model... . . .
        Collecting statistics from logfiles...
        Updating graphs...
@@ -90,7 +90,7 @@ High resolution diffraction limits: 1.55 A, 1.50 A
 
    * Refining using data up to 1.50 A resolution...
        Running command:
-       refmac5 HKLIN mdm2_merged.mtz XYZIN test_quick_mdm2_R00_1-55A.pdb HKLOUT test_quick_mdm2_R00_1-50A.mtz XYZOUT test_quick_mdm2_R00_1-50A.pdb LIBOUT test_quick_mdm2_R00_1-50A.cif
+       refmacat HKLIN mdm2_merged.mtz XYZIN test_quick_mdm2_R00_1-55A.pdb HKLOUT test_quick_mdm2_R00_1-50A.mtz XYZOUT test_quick_mdm2_R00_1-50A.pdb LIBOUT test_quick_mdm2_R00_1-50A.cif
        Calculating statistics of the refined structure model... . . . .
        Collecting statistics from logfiles...
        Updating graphs...
@@ -235,9 +235,10 @@ Suggested cutoff:
         os.chdir("..")
         shutil.rmtree(dir_project)
         
-elif not which("refmac5"):
+elif not (which("refmac5") or which("refmacat")):
     warnings.warn(UserWarning("Integration test could not be performed.\n"
-                              "refmac5: Command not found."))
+                              "refmac5: Command not found.\n"
+                              "refmacat: Command not found."))
 else:
     warnings.warn(UserWarning(
         "Integration test could not be performed.\n"
