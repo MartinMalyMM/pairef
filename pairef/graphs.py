@@ -984,7 +984,7 @@ def write_log_html(shells, ready_shells, args, versions_dict, flag_sets,
 \t\t<li>Paired refinement under the control of <i>PAIREF</i>. M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko (2020) <i>IUCrJ</i> <b>7</b>:681-692, DOI: <a href='https://doi.org/10.1107/S2052252520005916'>10.1107/S2052252520005916</a></li>
 """
     if not args.phenix or "ccp4" in sys.executable.lower():
-        page += "\t\t<li>Overview of the <i>CCP</i>4 suite and current developments. Collaborative Computational Project, Number 4 (2011) <i>Acta Cryst. D</i> <b>67</b>:235-242</li>\n"
+        page += "\t\t<li>The <i>CCP</i>4 suite: integrative software for macromolecular crystallography. J. Agirre <i>et al</i>. (2023) <i>Acta Cryst. D</i> <b>79</b>(6):449-461, DOI: 10.1107/S2059798323003595</li>\n"
     if args.phenix:
         page += "\t\t<li><i>PAIREF</i>: paired refinement also for Phenix users. M. Maly, K. Diederichs, J. Dohnalek, P. Kolenko (2021) <i>Acta Cryst. F</i><b>77</b>:226-229, DOI: <a href='https://doi.org/10.1107/s2053230x21006129'>10.1107/s2053230x21006129</a></li>\n"
         page += "\t\t<li>Macromolecular structure determination using X-rays, neutrons and electrons: recent developments in <i>Phenix</i>. D. Liebschner, P.V. Afonine, M.L. Baker, G. Bunkóczi, V.B. Chen, T.I. Croll, B. Hintze, L.W. Hung, S. Jain, A.J. McCoy, N.W. Moriarty, R.D. Oeffner, B.K. Poon, M.G. Prisant, R.J. Read, J.S. Richardson, D.C. Richardson, M.D. Sammito, O.V. Sobolev, D.H. Stockwell, T.C. Terwilliger, A.G. Urzhumtsev, L.L. Videau, C.J. Williams, P.D. Adams (2019) <i>Acta Cryst. D</i><b>75</b>:861-877</li>\n"
