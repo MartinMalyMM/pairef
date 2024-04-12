@@ -17,6 +17,7 @@ from pairef import __version__
 # TL - run with free flag No.2 with input mmcif - refmac
 #                                               - phenix.refine
 # hse11 - normal run using phenix.refine, quite fast calculation, low resolution ~2.9 A
+# 8OLA_five_letter - run using refmac --libin five-letter-code restraint --prerefinement-ncyc 10
 
 
 if which("refmac5"):
@@ -28,8 +29,9 @@ if which("refmac5"):
      ("BO_LIB", {"xyzin": "BO_edit94_refmac1.pdb", "hklin": "BO_R.mtz", "hklin_unmerged": "BO_XDS_ASCII.HKL", "libin": "BO_TRP-HIS_FC6.cif", "comin": "BO_setting.com"}, "2.59", "2.50", "--refmac --libin BO_TRP-HIS_FC6.cif --comfile BO_setting.com"),
      ("TL_cif_refmac", {"xyzin": "TL_3n21_edit05_refmac1_shaken.mmcif", "hklin": "TL_AUTOMATIC_DEFAULT_free_R.mtz"}, "1.80", "1.70,1.60,1.50", "--refmac --flag 2"),
      ("TL_cif_phenix", {"xyzin": "TL_3n21_edit05_refmac1_shaken.cif", "hklin": "TL_AUTOMATIC_DEFAULT_free_R.mtz", "defin": "TL_setting.def"}, "1.80", "1.70,1.60,1.50", "--phenix --flag 2 --def TL_setting.def"),
-     ("hse11", {"xyzin": "hse11_2-90A.pdb", "hklin": "hse11_2-45A.mtz", "hklin_unmerged": "hse11_XDS_ASCII.HKL"}, "2.90", "2.70,2.45", "--phenix")],
-     ids=["mdm2_0-10A", "CDO_0-10A", "POLI_TLS", "BO_LIB", "TL_cif_refmac", "TL_cif_phenix", "hse11"])
+     ("hse11", {"xyzin": "hse11_2-90A.pdb", "hklin": "hse11_2-45A.mtz", "hklin_unmerged": "hse11_XDS_ASCII.HKL"}, "2.90", "2.70,2.45", "--phenix"),
+     ("8OLA_five_letter", {"xyzin": "8OLA_ADP15.mmcif", "hklin": "8OLA-sf.mtz", "libin": "8OLA_A1H69.cif", "hklin_unmerged": None}, "1.60", "1.40", "--libin 8OLA_A1H69.cif --prerefinement-ncyc 10 --refmac")],
+     ids=["mdm2_0-10A", "CDO_0-10A", "POLI_TLS", "BO_LIB", "TL_cif_refmac", "TL_cif_phenix", "hse11", "8OLA_five_letter"])
     def test_integration(project, files, res_i, res_r, others, tmp_environ):
         if "--phenix" in others and not which("phenix.refine"):
             warnings.warn(UserWarning("phenix.refine was not found in executables.\n"))
@@ -50,19 +52,20 @@ if which("refmac5"):
 
         url_prefix = "https://raw.githubusercontent.com/MartinMalyMM/pairef_test_data/main/"
         for f in files.values():
-            filename, log = urllib_wget(url_prefix + f, f)
-            # try:
-            #    filename, log = urllib_wget(url_prefix + f, f)
-            #except urllib.error.HTTPError:        # Python 3
-            #    filename, log = urllib_wget(url_prefix_alt + f, f)
-            ## print(url_prefix + f)
-            ## print(bool("Content-Length: 14" in str(log)))
-            ## print(str(log))
-            #if "Content-Length: 14" in str(log):  # Python 2
-            #    print(url_prefix + f + " not found")
-            #    print("trying alt")
-            #    filename, log = urllib_wget(url_prefix_alt + f, f)
-            assert os.path.isfile(f)
+            if f:
+                filename, log = urllib_wget(url_prefix + f, f)
+                # try:
+                #    filename, log = urllib_wget(url_prefix + f, f)
+                #except urllib.error.HTTPError:        # Python 3
+                #    filename, log = urllib_wget(url_prefix_alt + f, f)
+                ## print(url_prefix + f)
+                ## print(bool("Content-Length: 14" in str(log)))
+                ## print(str(log))
+                #if "Content-Length: 14" in str(log):  # Python 2
+                #    print(url_prefix + f + " not found")
+                #    print("trying alt")
+                #    filename, log = urllib_wget(url_prefix_alt + f, f)
+                assert os.path.isfile(f)
         if "TL_cif" in project:
             filename, log = urllib_wget(
                 "https://pairef.fjfi.cvut.cz/docs/publication_examples/3-2_TL/pairef_TL_step0-10A/"
@@ -75,9 +78,9 @@ if which("refmac5"):
         hklin_unmerged = files["hklin_unmerged"]
 
         arguments = "--HKLIN " + hklin + \
-            " --XYZIN " + xyzin + \
-            " -u " + hklin_unmerged + \
-            " -i " + res_i + \
+            " --XYZIN " + xyzin
+        if hklin_unmerged: arguments += " -u " + hklin_unmerged
+        arguments += " -i " + res_i + \
             " -r " + res_r + \
             " -p " + project + \
             " " + others
@@ -110,13 +113,16 @@ Program has been executed with following input parameters:
             expected_stdout += " * Refinement software: REFMAC5\n"
         expected_stdout += " * XYZIN: " + xyzin + "\n"
         expected_stdout += " * HKLIN: " + hklin + "\n"
-        expected_stdout += " * HKLIN unmerged: " + hklin_unmerged + "\n"
+        if hklin_unmerged:
+            expected_stdout += " * HKLIN unmerged: " + hklin_unmerged + "\n"
         if "--libin" in others:
             expected_stdout += " * LIBIN: " + files["libin"] + "\n"
         if "--tlsin" in others:
             expected_stdout += " * TLSIN: " + files["tlsin"] + "\n"
         expected_stdout += " * Project name: " + project + "\n"
         expected_stdout += " * Resolution shells: " + res_r + "\n"
+        if "--prerefinement-ncyc 10" in others:
+            expected_stdout += " * Number of pre-refinement cycles that will be performed before the paired refinement protocol: 10\n"
         if "--comfile" in others:
             expected_stdout += " * Com file for REFMAC5: " + files["comin"] + "\n"
         if "--def" in others:
@@ -164,18 +170,12 @@ Program has been executed with following input parameters:
         files_out = \
             [xyzin,
              hklin,
-             hklin_unmerged,
              "PAIREF_cutoff.txt",
              "PAIREF_out.log",
              "PAIREF_" + project + ".html",
              "styles.css",
              project + "_CCfree.png",
-             project + "_CC.png",
              project + "_CCwork.png",
-             project + "_Comp_Mult.png",
-             project + "_Intensities.png",
-             project + "_merging_stats.csv",
-             project + "_No_reflections.png",
              project + "_No_work_free_reflections.png",
              project + "_Optical_resolution.csv",
              project + "_Optical_resolution.png",
@@ -184,10 +184,18 @@ Program has been executed with following input parameters:
              project + "_Rfree.png",
              project + "_Rgap.csv",
              project + "_Rgap.png",
-             project + "_Rmerge_Rmeas_Rpim.png",
              project + "_R-values.csv",
              project + "_R-values.png",
              project + "_Rwork.png"]
+        if hklin_unmerged:
+            files_out += \
+                [hklin_unmerged,
+                 project + "_merging_stats.csv",
+                 project + "_CC.png",
+                 project + "_Comp_Mult.png",
+                 project + "_No_reflections.png",
+                 project + "_Intensities.png",
+                 project + "_Rmerge_Rmeas_Rpim.png"]
         if "--refmac" in others:
             files_out += \
                 [project + "_R" + flag + "_" + res_i_name + "A_comparison_at_" + res_i_name + "A.log",
@@ -224,8 +232,9 @@ Program has been executed with following input parameters:
         # Clean up a bit
         os.chdir("..")
         for f in files.values():
-            if os.path.isfile(f):
-                os.remove(f)
+            if f:
+                if os.path.isfile(f):
+                    os.remove(f)
         # shutil.rmtree(dir_project)
 
 else:
