@@ -344,9 +344,35 @@ def refinement_phenix(res_cur,
     elif mode == "comp" or mode == "prev_pair":
         xyzin = args.project + "_R" + str(flag).zfill(2) + "_" + \
             twodecname(res_cur) + "A_001" + settings["pdbORmmcif"]
-    com = "refinement.input.xray_data.high_resolution=" + twodec(res_high)
+    if settings["phenix_subversion"] >= 21:
+        com = "data_manager {"
+        com += "\n  fmodel {"
+        com += "\n    xray_data {"
+        com += "\n      high_resolution=" + twodec(res_high)
+    else:
+        com = "refinement.input.xray_data.high_resolution=" + twodec(res_high)
     if res_low:
-        com += "\nrefinement.input.xray_data.low_resolution=" + twodec(res_low)
+        if settings["phenix_subversion"] >= 21:
+            com += "\n      low_resolution=" + twodec(res_low)
+        else:
+            com += "\nrefinement.input.xray_data.low_resolution=" + twodec(res_low)
+    if settings["phenix_subversion"] >= 21:
+        com += "\n      r_free_flags.test_flag_value=" + str(flag)
+    else:
+        com += "\nrefinement.input.xray_data.r_free_flags.test_flag_value=" + str(flag)
+    if settings["phenix_subversion"] >= 21:
+        com += "\n    }"
+        com += "\n  }"
+    if hasattr(args, "label"):  # always false for the very first mode="refine"
+        if settings["phenix_subversion"] >= 21:
+            com += "\n  miller_array {"
+            com += "\n    file=" + args.hklin
+            com += "\n    labels.name='" + args.label.split(":")[1] + "'"
+            com += "\n  }"
+        else:
+            com += "\nrefinement.input.xray_data.labels=" + args.label
+    if settings["phenix_subversion"] >= 21:
+        com += "\n}"
     if args.defin:
         with open(args.defin, "r") as deffile:
             deff = deffile.read()
@@ -407,22 +433,24 @@ def refinement_phenix(res_cur,
             com += "\nrefinement.main.number_of_macro_cycles=3"
         if args.quick:
             com += "\nrefinement.main.number_of_macro_cycles=1"
-    com += "\nrefinement.gui.base_output_dir=None"
-    com += "\nrefinement.gui.tmp_dir=None"
-    com += "\nrefinement.gui.notify_email=None"
-    com += "\nrefinement.output.n_resolution_bins=" + str(n_bins)
-    com += "\nrefinement.output.prefix=" + prefix
-    com += "\nrefinement.output.serial=None"
-    com += "\nrefinement.output.serial_format='%03d'"
+    if settings["phenix_subversion"] >= 21:
+        # com += "\nrefinement.main.max_number_of_resolution_bins=" + str(n_bins)
+        com += "\noutput.prefix=" + prefix
+        com += "\noutput.serial=None"
+        com += "\noutput.serial_format='%03d'"
+    else:
+        com += "\nrefinement.output.n_resolution_bins=" + str(n_bins)
+        com += "\nrefinement.output.prefix=" + prefix
+        com += "\nrefinement.output.serial=None"
+        com += "\nrefinement.output.serial_format='%03d'"
+        com += "\nrefinement.gui.base_output_dir=None"
+        com += "\nrefinement.gui.tmp_dir=None"
+        com += "\nrefinement.gui.notify_email=None"
     # com += "\nrefinement.input.pdb.filename=" + xyzin
     # com += "\nrefinement.input.xray_data.filename=" + args.hklin
     # com += "\nrefinement.input.xray_data.r_free_flags.filename=" + args.hklin
     # com += "\nrefinement.input.monomers.file_name=None"
     # com += "\nrefinement.input.sequence.file_name=None"
-    com += "\nrefinement.input.xray_data.r_free_flags.test_flag_value=" + \
-        str(flag)
-    if hasattr(args, "label"):  # always false for the very first mode="refine"
-        com += "\nrefinement.input.xray_data.labels=" + args.label
     # Output filenames
     if "cif" in settings["pdbORmmcif"]:
         xyzout = prefix + "_001" + settings["pdbORmmcif"]
@@ -439,10 +467,14 @@ def refinement_phenix(res_cur,
     if args.libin:
         command.append(args.libin)
     if args.defin:
-        command.append(args.defin)
+        if settings["phenix_subversion"] >= 21:
+            com += "\ndata_manager.phil_files=" + args.defin
+        else:
+            command.append(args.defin)
     with open(params, "w") as pars:
         pars.write(com)
     command.append(params)
+    # command.append("output.overwrite=True")
 
     if (mode == "refine" or
             (mode == "first" and args.complete_cross_validation)):
@@ -491,12 +523,11 @@ def refinement_phenix(res_cur,
         pdbout = prefix + "_001" + ".pdb"
         prefix_copy = prefix + "_comparison_at_" + twodecname(res_high) + "A"
         shutil.copy2(pdbout, prefix_copy + "_001.pdb")
-    version = extract_from_file(logout, "Version", 0, 1, nth_word=1,
-                                get_first=True)
-    results = {"HKLOUT": hklout, "XYZOUT": xyzout, "LOGOUT": logout,
-               "version": version}
+        shutil.copy2(hklout, prefix_copy + "_001.mtz")
+    results = {"HKLOUT": hklout, "XYZOUT": xyzout, "LOGOUT": logout}
+    #           "version": version}
     if mode == "comp" or mode == "prev_pair":
-        files_to_be_removed = [hklout, geoout]
+        files_to_be_removed = [geoout]
         if "tlsout" in vars():
             to_be_removed += [tlsout]
         for filename in files_to_be_removed:
@@ -545,9 +576,9 @@ def collect_stat_BINNED(shells, project, hklin, n_bins_low, flag,
                         res_low, refinement="refmac"):
     """Collects statistics of a particular structure model depending on
     resolution (*e. i.* values are binned) and saves them in a CSV file.
-    Statistics are picked from a REFMAC5 logfile relating to the model
-    `project_RXX_twodecname(shells[-1])A.pdb`, where `XX` is a number
-    of a flag.
+    For REFMAC5, statistics are picked from a logfile relating to the model
+    `project_RXX_twodecname(shells[-1])A`, where `XX` is a number
+    of a flag. For Phenix, statistics are calculated using CCTBX from MTZ.
 
     This function is called by the function `main()` in file `launcher.py`.
 
@@ -590,16 +621,23 @@ def collect_stat_BINNED(shells, project, hklin, n_bins_low, flag,
         overall_CCfree = fourdec(overall_CCfree)
     elif refinement == "phenix":
         # Pick statistics for `n_bins_low` res. shells up to initial diffr. limit
-        pdbfilename = prefix + "_comparison" \
-            "_at_" + twodecname(shells[0]) + "A_001.pdb"
+        # pdbfilename = prefix + "_comparison" \
+        #     "_at_" + twodecname(shells[0]) + "A_001.pdb"
+        mtzfilename = prefix + "_comparison" \
+            "_at_" + twodecname(shells[0]) + "A_001.mtz"
+        fobs, fmodel, flags = get_f_cctbx(mtzfilename)
         bin_res_low, bin_res_high, bin_Nwork, bin_Nfree, \
             bin_Rwork, bin_Rfree, bin_CCwork, bin_CCfree = \
-            collect_stat_binned_phenix_low(pdbfilename, n_bins_low, res_low)
+            calculate_stats_cctbx(fobs, fmodel, flags, n_bins=n_bins_low)
+        #   collect_stat_binned_phenix_low(pdbfilename, n_bins_low, res_low)
         # Pick overall values for data up to previous diffraction limit
         # (to be comparable pairwisely)
-        pdbfilename = prefix + "_001.pdb"
+        # pdbfilename = prefix + "_001.pdb"
+        mtzfilename = prefix + "_001.mtz"
+        fobs, fmodel, flags = get_f_cctbx(mtzfilename)
         overall_Rwork, overall_Rfree = \
-            collect_stat_overall_phenix(pdbfilename)
+            calculate_stats_cctbx(fobs, fmodel, flags, n_bins=1, overall=True)
+        #   collect_stat_overall_phenix(pdbfilename)
         overall_CCwork = "N/A"
         overall_CCfree = "N/A"
         overall_CCavg = "N/A"
@@ -623,9 +661,9 @@ def collect_stat_BINNED(shells, project, hklin, n_bins_low, flag,
                               bin_CCwork, bin_CCfree)
     # Pick stats. for the high resolution shells and write them to the CSV file
     for i in range(len(shells) - 1):
+        bin_res_low = [twodec(shells[i])]
+        bin_res_high = [twodec(shells[i + 1])]
         if refinement == "refmac":
-            bin_res_low = [twodec(shells[i])]
-            bin_res_high = [twodec(shells[i + 1])]
             logfilename = prefix + "_comparison" \
                 "_at_" + twodecname(shells[i + 1]) + "A.log"
             mtzfilename = prefix + ".mtz"
@@ -634,10 +672,14 @@ def collect_stat_BINNED(shells, project, hklin, n_bins_low, flag,
                     logfilename, mtzfilename, hklin, n_bins_low,
                     float(twodec(shells[i])), float(twodec(shells[i + 1])), flag)
         elif refinement == "phenix":
-            pdbfilename = prefix + "_comparison" \
-                "_at_" + twodecname(shells[i + 1]) + "A_001.pdb"
-            bin_res_low, bin_res_high, bin_Nwork, bin_Nfree, bin_Rwork, bin_Rfree, \
-                bin_CCwork, bin_CCfree = collect_stat_binned_phenix_high(pdbfilename, n_bins_low)
+            # pdbfilename = prefix + "_comparison" \
+            #     "_at_" + twodecname(shells[i + 1]) + "A_001.pdb"
+            mtzfilename = prefix + "_comparison" \
+                "_at_" + twodecname(shells[i + 1]) + "A_001.mtz"
+            fobs, fmodel, flags = get_f_cctbx(mtzfilename)
+            _bin_res_low, _bin_res_high, bin_Nwork, bin_Nfree, bin_Rwork, bin_Rfree, \
+                bin_CCwork, bin_CCfree = calculate_stats_cctbx(fobs, fmodel, flags, n_bins=1)
+            #                          = collect_stat_binned_phenix_high(pdbfilename, n_bins_low)
         collect_stat_write(
             csvfilename, bin_res_low, bin_res_high, bin_Nwork, bin_Nfree,
             bin_Rwork, bin_Rfree, bin_CCwork, bin_CCfree,
@@ -767,14 +809,16 @@ def collect_stat_binned_refmac_high(
 
 
 def collect_stat_binned_phenix_low(pdbfilename, n_bins_low, res_low=999):
-    """Picks and returns statistics values in the given `REFMAC5` logfile.
+    """This function is deprecated and not used now, it does not work
+    for Phenix 1.21 and newer. Function calculate_stats_cctbx() is used instead.
+    Picks and returns statistics values in the given PDB.
     Logfile supposed to contain information from `n_bins_low` shells.
 
     This function is called by the function `collect_stat_BINNED()`
     from this file and `main()` from file `launcher.py`.
 
     Args:
-        pdbfilename (str): Name of a `REFMAC5` logfile
+        pdbfilename (str): Name of a PDB
         n_bins_low (int): Number of low resolution bins
 
     Returns:
@@ -795,6 +839,8 @@ def collect_stat_binned_phenix_low(pdbfilename, n_bins_low, res_low=999):
         pdbfilename, "REMARK   3   BIN  RESOLUTION RANGE  COMPL.    "
         "NWORK NFREE   RWORK  RFREE  CCWORK CCFREE", 1, n_bins_low)
     for i in range(n_bins_low):
+        print(pdbfile_lines[i])####################
+        print(pdbfile_lines[i].split())
         bin_res_low.append(pdbfile_lines[i].split()[3])
         bin_res_high.append(pdbfile_lines[i].split()[5])
         bin_Nwork.append(pdbfile_lines[i].split()[7])
@@ -808,7 +854,9 @@ def collect_stat_binned_phenix_low(pdbfilename, n_bins_low, res_low=999):
 
 
 def collect_stat_binned_phenix_high(pdbfilename, n_bins_low):
-    """Picks and returns statistics values in the given `REFMAC5` logfile.
+    """This function is deprecated and not used now, it does not work
+    for Phenix 1.21 and newer. Function calculate_stats_cctbx() is used instead.
+    Picks and returns statistics values in the given `REFMAC5` logfile.
     Logfile supposed to contain information from 1 shells.
 
     This function is called by the function `collect_stat_BINNED()`.
@@ -859,8 +907,8 @@ def collect_stat_write(csvfilename, bin_res_low, bin_res_high,
     with open(csvfilename, "a") as csvfile:
         for i in range(len(bin_Rwork)):
             csvfile.write(
-                str(shell_number).zfill(2) + "        " + bin_res_low[i] + ""
-                " - " + bin_res_high[i] + "         " + bin_Nwork[i] + "     "
+                str(shell_number).zfill(2) + "        " + str(bin_res_low[i]) + ""
+                " - " + str(bin_res_high[i]) + "         " + bin_Nwork[i] + "     "
                 "" + bin_Nfree[i] + "     " + bin_Rwork[i] + "     "
                 "" + bin_Rfree[i] + "     " + bin_CCwork[i] + "     "
                 "" + bin_CCfree[i] + "\n")
@@ -878,9 +926,9 @@ def collect_stat_write(csvfilename, bin_res_low, bin_res_high,
 
 def collect_stat_OVERALL(shells, args, flag, refinement="refmac"):
     """Collects overall statistics of a particular structure model
-    from a REFMAC5 logfile or from PDB file (phenix.refine).
-    Model which is dealing with: `project_RXX_twodecname(shells[-1])A.pdb`
-    (REFMAC5) or `project_RXX_twodecname(shells[-1])A_001.pdb` (phenix.refine),
+    from a REFMAC5 logfile or using CCTBX (phenix.refine).
+    File which is dealing with: `project_RXX_twodecname(shells[-1])A.pdb`
+    (REFMAC5) or `project_RXX_twodecname(shells[-1])A_001.mtz` (phenix.refine),
     where `XX` is a number of a flag.
 
     This function is called by the function `main()` in file `launcher.py`.
@@ -916,13 +964,20 @@ def collect_stat_OVERALL(shells, args, flag, refinement="refmac"):
                 mtzfilename, args.hklin, flag, res_high=float(shells[-2]))  # floats
         elif refinement == "phenix":
             # get Rwork, Rfree                (not CCwork, CCfree, CCavg)
-            pdbfilename = prefix + "_" + twodecname(shells[-2]) + "A_001.pdb"
+            # pdbfilename = prefix + "_" + twodecname(shells[-2]) + "A_001.pdb"
+            mtzfilename = prefix + "_" + twodecname(shells[-2]) + "A_001.mtz"
+            fobs, fmodel, flags = get_f_cctbx(mtzfilename)
             Rwork_before, Rfree_before = \
-                collect_stat_overall_phenix(pdbfilename)
-            pdbfilename = prefix + "_" + twodecname(shells[-1]) + "A_comparison" \
-                "_at_" + twodecname(shells[-2]) + "A_prev_pair_001.pdb"
+                calculate_stats_cctbx(fobs, fmodel, flags, n_bins=1, overall=True)
+            #     collect_stat_overall_phenix(pdbfilename)
+            # pdbfilename = prefix + "_" + twodecname(shells[-1]) + "A_comparison" \
+            #     "_at_" + twodecname(shells[-2]) + "A_prev_pair_001.pdb"
+            mtzfilename = prefix + "_" + twodecname(shells[-1]) + "A_comparison" \
+                "_at_" + twodecname(shells[-2]) + "A_prev_pair_001.mtz"
+            fobs, fmodel, flags = get_f_cctbx(mtzfilename)
             Rwork_after, Rfree_after = \
-                collect_stat_overall_phenix(pdbfilename)
+                calculate_stats_cctbx(fobs, fmodel, flags, n_bins=1, overall=True)
+            #   collect_stat_overall_phenix(pdbfilename)
 
         # Rwork, Rfree
         Rwork_change = fourdec(float(Rwork_after) - float(Rwork_before))
@@ -957,9 +1012,13 @@ def collect_stat_OVERALL(shells, args, flag, refinement="refmac"):
             "_comparison_at_" + twodecname(shells[0]) + "A.log"
         Rwork, Rfree = collect_stat_overall_refmac(logfilename, flag)
     elif refinement == "phenix":   # get Rwork, Rfree
-        pdbfilename = prefix + "_" + twodecname(shells[-1]) + "A" \
-            "_comparison_at_" + twodecname(shells[0]) + "A_001.pdb"
-        Rwork, Rfree = collect_stat_overall_phenix(pdbfilename)
+        # pdbfilename = prefix + "_" + twodecname(shells[-1]) + "A" \
+        #     "_comparison_at_" + twodecname(shells[0]) + "A_001.pdb"
+        # Rwork, Rfree = collect_stat_overall_phenix(pdbfilename)
+        mtzfilename = prefix + "_" + twodecname(shells[-1]) + "A" \
+            "_comparison_at_" + twodecname(shells[0]) + "A_001.mtz"
+        fobs, fmodel, flags = get_f_cctbx(mtzfilename)
+        Rwork, Rfree = calculate_stats_cctbx(fobs, fmodel, flags, overall=True)
     Rgap = fourdec(float(Rfree) - float(Rwork))
     csvfilename_gap = prefix + "_Rgap.csv"
     # Write the begining of the csv file if it does not exist yet
@@ -1084,7 +1143,9 @@ def calculate_correlation(hkl_calc, hklin,
 
     
 def collect_stat_overall_phenix(pdbfilename):
-    """Picks and returns overall Rwork, Rfree values from a given PDB file 
+    """This function is deprecated and not used now, it does not work
+    for Phenix 1.21 and newer. Function calculate_stats_cctbx() is used instead.
+    Picks and returns overall Rwork, Rfree values from a given PDB file 
     refined in phenix.refine.
 
     This function is called by the functions `collect_stat_OVERALL()`
@@ -1105,6 +1166,90 @@ def collect_stat_overall_phenix(pdbfilename):
         pdbfilename,
         "REMARK   3   FREE R VALUE                     : ", 0, 1, -1)
     return Rwork, Rfree
+
+
+def get_f_cctbx(mtzfilename, d_max=0, d_min=0):
+    from iotbx.reflection_file_utils import get_r_free_flags_scores
+    from iotbx.file_reader import any_file
+    mtz_in = any_file(mtzfilename)
+    ma = mtz_in.file_server.miller_arrays
+    flags = fmodel = fobs = None
+    # select the output arrays from phenix.refine
+    for array in ma :
+        labels = array.info().label_string()
+        if labels.startswith("R-free-flags"):
+            flags = array
+        elif labels.startswith("F-model"):
+            fmodel = abs(array)
+        elif labels.startswith("F-obs-filtered"):
+            fobs = array
+    if (None in [flags, fobs, fmodel]):
+        raise RuntimeError("Not a valid phenix.refine output file")
+    scores = get_r_free_flags_scores([flags], None)
+    test_flag_value = scores.test_flag_values[0]
+    flags = flags.customized_copy(data=flags.data()==test_flag_value)
+    fmodel = fmodel.resolution_filter(d_max=d_max, d_min=d_min)
+    fmodel, fobs = fmodel.common_sets(other=fobs)
+    fmodel, flags = fmodel.common_sets(other=flags)
+    return fobs, fmodel, flags
+
+
+def calculate_stats_cctbx(fobs, fmodel, flags, n_bins=10, overall=False, bins=False):
+    """Based on iotbx/examples/recalculate_phenix_refine_r_factors.py"""
+    fmodel, fobs = fmodel.common_sets(other=fobs)
+    fmodel, flags = fmodel.common_sets(other=flags)
+    fc_work = fmodel.select(~(flags.data()))
+    fo_work = fobs.select(~(flags.data()))
+    fc_test = fmodel.select(flags.data())
+    fo_test = fobs.select(flags.data())
+    r_work = str(round(fo_work.r1_factor(fc_work), 4))
+    r_free = str(round(fo_test.r1_factor(fc_test), 4))
+    # print("r_work = %.4f" % r_work)
+    # print("r_free = %.4f" % r_free)
+    if overall:
+        return r_work, r_free
+    flags.setup_binner(n_bins=n_bins)
+    fo_work.use_binning_of(flags)
+    fc_work.use_binner_of(fo_work)
+    fo_test.use_binning_of(fo_work)
+    fc_test.use_binning_of(fo_work)
+    bin_res_low = []
+    bin_res_high = []
+    bin_Nwork = []
+    bin_Nfree = []
+    bin_Rwork = []
+    bin_Rfree = []
+    bin_CCwork = []
+    bin_CCfree = []
+    for i_bin in fo_work.binner().range_all():
+        sel_work = fo_work.binner().selection(i_bin)
+        sel_test = fo_test.binner().selection(i_bin)
+        fo_work_bin = fo_work.select(sel_work)
+        fc_work_bin = fc_work.select(sel_work)
+        fo_test_bin = fo_test.select(sel_test)
+        fc_test_bin = fc_test.select(sel_test)
+        if fc_test_bin.size() == 0 : continue
+        _bin_res_low, _bin_res_high = fo_work_bin.d_max_min()
+        bin_res_low.append(str(round(_bin_res_low, 2)))
+        if bins: continue
+        bin_res_high.append(str(round(_bin_res_high, 2)))
+        bin_Nwork.append(str(fo_work_bin.size()))
+        bin_Nfree.append(str(fo_test_bin.size()))
+        bin_Rwork.append(str(round(fo_work_bin.r1_factor(other=fc_work_bin,
+            assume_index_matching=True), 4)))
+        bin_Rfree.append(str(round(fo_test_bin.r1_factor(other=fc_test_bin,
+            assume_index_matching=True), 4)))
+        bin_CCwork.append(str(round(fo_work_bin.correlation(fc_work_bin).coefficient(), 4)))
+        bin_CCfree.append(str(round(fo_test_bin.correlation(fc_test_bin).coefficient(), 4)))
+        # legend = flags.binner().bin_legend(i_bin, show_counts=False)
+        # print("%s  %8d %8d  %.4f %.4f  %.3f %.3f" % (legend, fo_work_bin.size(),
+        #   fo_test_bin.size(), r_work_bin, r_free_bin, cc_work_bin, cc_free_bin))
+    # print(bin_res_low, bin_res_high, bin_Nwork, bin_Nfree,
+    #        bin_Rwork, bin_Rfree, bin_CCwork, bin_CCfree)
+    if bins:
+        return bin_res_low
+    return(bin_res_low, bin_res_high, bin_Nwork, bin_Nfree,
+           bin_Rwork, bin_Rfree, bin_CCwork, bin_CCfree)
 
 
 def collect_stat_OVERALL_AVG(shells, project, flag_sets):

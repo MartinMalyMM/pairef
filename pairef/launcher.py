@@ -12,9 +12,10 @@ from .preparation import calculate_merging_stats, run_pdbtools
 from .preparation import res_from_hklin_unmerged, check_refinement_software
 from .preparation import suggest_cutoff
 from .commons import twodec, twodecname, warning_my, try_symlink, Popen_my
-from .refinement import collect_stat_OVERALL
-from .refinement import collect_stat_OVERALL_AVG
+from .commons import extract_from_file
+from .refinement import collect_stat_OVERALL, collect_stat_OVERALL_AVG
 from .refinement import collect_stat_BINNED
+from .refinement import calculate_stats_cctbx, get_f_cctbx
 from .graphs import matplotlib_bar, matplotlib_line, write_log_html
 
 
@@ -421,7 +422,7 @@ def main(args):
         refinement = "phenix"
         refinement_name = "phenix.refine"
         from .refinement import refinement_phenix
-        from .refinement import collect_stat_binned_phenix_low
+        # from .refinement import collect_stat_binned_phenix_low
     else:
         refinement = "refmac"  # REFMAC5 as default
         refinement_name = "REFMAC5"
@@ -430,6 +431,11 @@ def main(args):
     settings["sh"] = False
     if args.phenix and platform.system() == 'Windows':
         settings["sh"] = True
+
+    versions_dict = {"refmac_version": "N/A",  # It will be found later
+                     "phenix_version": "N/A",  # It will be found now
+                     "phenix_subversion": "N/A",  # It will be found now
+                     "pairef_version": __version__}
 
     # Check of the needed executables - works only on Linux or Windows
     if platform.system() == 'Linux' or platform.system() == 'Windows':
@@ -446,6 +452,13 @@ def main(args):
                 required_executables = []  # just skip the check
             # modules: from xia2.Wrappers.CCP4.Mtzdump import Mtzdump
             #          iotbx
+            #
+            with open("phenix_version.txt", 'w') as out:
+                p = Popen_my(["phenix.version"], stdout=out, stderr=out, shell=settings["sh"])
+                p.communicate()
+            versions_dict["phenix_version"] = extract_from_file(
+                "phenix_version.txt", "ersion", 0, 1, nth_word=-1)
+            settings["phenix_subversion"] = int(versions_dict["phenix_version"].split(".")[1])
         for required_executable in required_executables:
             if not which(required_executable) and not args.test:
                 sys.stderr.write("ERROR: PAIREF requires installed `"
@@ -475,10 +488,6 @@ def main(args):
     # Set to write STDOUT to screen and file
     writer = output_log(sys.stdout, workdir + '/PAIREF_out.log')
     sys.stdout = writer
-
-    versions_dict = {"refmac_version": "N/A",  # It will be found later
-                     "phenix_version": "N/A",  # It will be found later
-                     "pairef_version": __version__}
 
     # Show information about the module and input parameters
     welcome(args, versions_dict["pairef_version"])
@@ -658,7 +667,7 @@ def main(args):
                                         res_highest=shells[-1],
                                         flag=flag,
                                         xyzin_start=xyzin_start)
-            versions_dict["phenix_version"] = results["version"]
+            # versions_dict["phenix_version"] = results["version"]
         collect_stat_OVERALL([res_cur], args, flag, refinement)
         if args.complete_cross_validation or args.prerefinement_ncyc:
             matplotlib_line(
@@ -706,10 +715,17 @@ def main(args):
         bins_low = collect_stat_binned_refmac_low(
             logfilename, mtzfilename, args.hklin, n_bins_low, res_low, flag)[1]
     elif refinement == "phenix":
-        pdbfilename = args.project + "_R" + str(flag_sets[0]).zfill(2) + "_" \
-            "" + twodecname(shells[0]) + "A_comparison" \
-            "_at_" + twodecname(shells[0]) + "A_001.pdb"
-        bins_low = collect_stat_binned_phenix_low(pdbfilename, n_bins_low)[0]
+        mtzfilename = \
+            args.project + "_R" + str(flag_sets[0]).zfill(2) + "_" \
+            "" + twodecname(shells[0]) + "A_001.mtz"
+        fobs, fmodel, flags = get_f_cctbx(mtzfilename)
+        bins_low = \
+                calculate_stats_cctbx(fobs, fmodel, flags, n_bins=n_bins_low, bins=True)
+        # pdbfilename = args.project + "_R" + str(flag_sets[0]).zfill(2) + "_" \
+        #     "" + twodecname(shells[0]) + "A_comparison" \
+        #     "_at_" + twodecname(shells[0]) + "A_001.pdb"
+        # bins_low = collect_stat_binned_phenix_low(pdbfilename, n_bins_low)[0]
+        # bins_low = [float(bin) for bin in bins_low]
     bins_low = [float(bin) for bin in bins_low]
     if not args.complete_cross_validation:
         collect_stat_BINNED([res_cur], args.project, args.hklin,
