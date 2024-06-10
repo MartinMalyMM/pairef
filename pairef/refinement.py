@@ -802,8 +802,13 @@ def collect_stat_binned_refmac_high(
         for i in range(n_bins_low):
             bin_Nfree.append(int(logfile_lines[i][49:57]))
         bin_Nfree = [str(sum(bin_Nfree))]
-    except IndexError:
-        bin_Nfree = ["N/A"]
+    except:
+        try:  # refmac 5.8.0430 and newer
+            for i in range(n_bins_low):
+                bin_Nfree.append(int(logfile_lines[i][50:61]))
+            bin_Nfree = [str(sum(bin_Nfree))]
+        except:
+            bin_Nfree = ["N/A"]
     return(bin_Nwork, bin_Nfree, bin_Rwork, bin_Rfree,
            bin_CCwork, bin_CCfree)
 
