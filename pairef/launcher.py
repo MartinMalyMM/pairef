@@ -453,12 +453,6 @@ def main(args):
             # modules: from xia2.Wrappers.CCP4.Mtzdump import Mtzdump
             #          iotbx
             #
-            with open("phenix_version.txt", 'w') as out:
-                p = Popen_my(["phenix.version"], stdout=out, stderr=out, shell=settings["sh"])
-                p.communicate()
-            versions_dict["phenix_version"] = extract_from_file(
-                "phenix_version.txt", "ersion", 0, 1, nth_word=-1)
-            settings["phenix_subversion"] = int(versions_dict["phenix_version"].split(".")[1])
         for required_executable in required_executables:
             if not which(required_executable) and not args.test:
                 sys.stderr.write("ERROR: PAIREF requires installed `"
@@ -467,6 +461,14 @@ def main(args):
                                  "executable."
                                  "\nAborting.\n")
                 sys.exit(1)
+
+    if refinement == "phenix":
+        with open("phenix_version.txt", 'w') as out:
+            p = Popen_my(["phenix.version"], stdout=out, stderr=out, shell=settings["sh"])
+            p.communicate()
+        versions_dict["phenix_version"] = extract_from_file(
+            "phenix_version.txt", "ersion", 0, 1, nth_word=-1)
+        settings["phenix_subversion"] = int(versions_dict["phenix_version"].split(".")[1])
 
     # If a project name is not set, assign something
     if not args.project:
