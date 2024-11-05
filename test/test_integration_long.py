@@ -68,8 +68,7 @@ if which("refmac5"):
                 assert os.path.isfile(f)
         if "TL_cif" in project:
             filename, log = urllib_wget(
-                "https://pairef.fjfi.cvut.cz/docs/publication_examples/3-2_TL/pairef_TL_step0-10A/"
-                "AUTOMATIC_DEFAULT_scaled_unmerged.mtz",
+                "https://pairef.structbio.org/docs/publication_examples/3-2_TL/AUTOMATIC_DEFAULT_scaled_unmerged.mtz",
                 "TL_AUTOMATIC_DEFAULT_scaled_unmerged.mtz")
             files["hklin_unmerged"] = "TL_AUTOMATIC_DEFAULT_scaled_unmerged.mtz"
             assert os.path.isfile("TL_AUTOMATIC_DEFAULT_scaled_unmerged.mtz")
