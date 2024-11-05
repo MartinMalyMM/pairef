@@ -29,7 +29,7 @@ To run paired refinement of a model (previously refined at 1.81 Å) for a series
 
    cctbx.python -m pairef --XYZIN model_1-81A.pdb --HKLIN data_1-5A.mtz --HKLIN_UNMERGED data_1-5A_unmerged.mtz -i 1.81 -r 1.7,1.6,1.5
 
-For detailed information about other program parameters, read the documentation available at `<http://pairef.fjfi.cvut.cz/docs>`_.
+For detailed information about other program parameters, read the documentation available at `<http://pairef.structbio.org/docs>`_.
 
 Credits and contact
 -------------------
