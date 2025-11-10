@@ -344,7 +344,7 @@ def refinement_phenix(res_cur,
     elif mode == "comp" or mode == "prev_pair":
         xyzin = args.project + "_R" + str(flag).zfill(2) + "_" + \
             twodecname(res_cur) + "A_001" + settings["pdbORmmcif"]
-    if settings["phenix_subversion"] >= 21:
+    if settings["phenix_version"] >= 1.21:
         com = "data_manager {"
         com += "\n  fmodel {"
         com += "\n    xray_data {"
@@ -352,26 +352,26 @@ def refinement_phenix(res_cur,
     else:
         com = "refinement.input.xray_data.high_resolution=" + twodec(res_high)
     if res_low:
-        if settings["phenix_subversion"] >= 21:
+        if settings["phenix_version"] >= 1.21:
             com += "\n      low_resolution=" + twodec(res_low)
         else:
             com += "\nrefinement.input.xray_data.low_resolution=" + twodec(res_low)
-    if settings["phenix_subversion"] >= 21:
+    if settings["phenix_version"] >= 1.21:
         com += "\n      r_free_flags.test_flag_value=" + str(flag)
     else:
         com += "\nrefinement.input.xray_data.r_free_flags.test_flag_value=" + str(flag)
-    if settings["phenix_subversion"] >= 21:
+    if settings["phenix_version"] >= 1.21:
         com += "\n    }"
         com += "\n  }"
     if hasattr(args, "label"):  # always false for the very first mode="refine"
-        if settings["phenix_subversion"] >= 21:
+        if settings["phenix_version"] >= 1.21:
             com += "\n  miller_array {"
             com += "\n    file=" + args.hklin
             com += "\n    labels.name='" + args.label.split(":")[1] + "'"
             com += "\n  }"
         else:
             com += "\nrefinement.input.xray_data.labels=" + args.label
-    if settings["phenix_subversion"] >= 21:
+    if settings["phenix_version"] >= 1.21:
         com += "\n}"
     if args.defin:
         with open(args.defin, "r") as deffile:
@@ -433,7 +433,7 @@ def refinement_phenix(res_cur,
             com += "\nrefinement.main.number_of_macro_cycles=3"
         if args.quick:
             com += "\nrefinement.main.number_of_macro_cycles=1"
-    if settings["phenix_subversion"] >= 21:
+    if settings["phenix_version"] >= 1.21:
         # com += "\nrefinement.main.max_number_of_resolution_bins=" + str(n_bins)
         com += "\noutput.prefix=" + prefix
         com += "\noutput.serial=None"
@@ -467,7 +467,7 @@ def refinement_phenix(res_cur,
     if args.libin:
         command.append(args.libin)
     if args.defin:
-        if settings["phenix_subversion"] >= 21:
+        if settings["phenix_version"] >= 1.21:
             com += "\ndata_manager.phil_files=" + args.defin
         else:
             command.append(args.defin)

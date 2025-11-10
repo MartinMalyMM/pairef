@@ -434,7 +434,6 @@ def main(args):
 
     versions_dict = {"refmac_version": "N/A",  # It will be found later
                      "phenix_version": "N/A",  # It will be found now
-                     "phenix_subversion": "N/A",  # It will be found now
                      "pairef_version": __version__}
 
     # Check of the needed executables - works only on Linux or Windows
@@ -468,7 +467,11 @@ def main(args):
             p.communicate()
         versions_dict["phenix_version"] = extract_from_file(
             "phenix_version.txt", "ersion", 0, 1, nth_word=-1)
-        settings["phenix_subversion"] = int(versions_dict["phenix_version"].split(".")[1])
+        try:
+            phenix_version_parts = versions_dict["phenix_version"].split(".", 2)
+            settings["phenix_version"] = float(".".join(phenix_version_parts[:2]))
+        except:
+            settings["phenix_version"] = 2.0
 
     # If a project name is not set, assign something
     if not args.project:
